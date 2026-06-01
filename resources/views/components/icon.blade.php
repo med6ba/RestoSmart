@@ -146,6 +146,19 @@
             <path d="M5 12h14" />
             @break
 
+        @case('qr-code')
+            <rect x="3" y="3" width="7" height="7" rx="1" />
+            <rect x="14" y="3" width="7" height="7" rx="1" />
+            <rect x="3" y="14" width="7" height="7" rx="1" />
+            <path d="M7 7h.01" />
+            <path d="M18 7h.01" />
+            <path d="M7 18h.01" />
+            <path d="M14 14h2v2h-2z" />
+            <path d="M18 14h3v3" />
+            <path d="M14 18h2v3" />
+            <path d="M18 21h3" />
+            @break
+
         @case('moon')
             <path d="M20.9 13.2A8 8 0 1 1 10.8 3.1a6.5 6.5 0 0 0 10.1 10.1Z" />
             @break

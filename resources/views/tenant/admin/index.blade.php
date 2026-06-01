@@ -16,6 +16,44 @@
         </section>
 
         <section class="mt-8 rounded-lg border border-stone-200 bg-white p-5">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                    <h2 class="text-lg font-semibold">Dining room tables</h2>
+                    <p class="mt-1 text-sm text-stone-600">{{ $tableCount }} active tables with unique IDs and QR codes.</p>
+                </div>
+                <form method="POST" action="{{ route('tenant.admin.tables.configure', tenant('id')) }}" class="grid gap-2 sm:grid-cols-[160px_auto]">
+                    @csrf
+                    <div>
+                        <x-input-label for="table_count" value="Number of tables" required />
+                        <input id="table_count" name="table_count" type="number" min="1" max="200" value="{{ old('table_count', $tableCount ?: 12) }}" class="mt-1 w-full rounded-md border-stone-300 text-sm" required>
+                        <x-input-error :messages="$errors->get('table_count')" class="mt-2" />
+                    </div>
+                    <button class="mt-6 inline-flex items-center justify-center gap-2 rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white app-focus hover:bg-red-800">
+                        <x-icon name="qr-code" class="h-4 w-4" />
+                        Generate
+                    </button>
+                </form>
+            </div>
+
+            <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                @forelse ($tables as $table)
+                    <article class="rounded-lg border border-stone-200 p-4">
+                        <div class="flex items-start gap-4">
+                            <img src="{{ route('tenant.admin.tables.qr', [tenant('id'), $table]) }}" alt="{{ $table->code }} QR code" class="h-24 w-24 rounded-md border border-stone-200 bg-white p-1">
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-stone-500">Table ID</p>
+                                <p class="mt-1 text-2xl font-bold">{{ $table->code }}</p>
+                                <p class="mt-2 break-all text-xs text-stone-500">{{ $table->qr_token }}</p>
+                            </div>
+                        </div>
+                    </article>
+                @empty
+                    <div class="rounded-lg border border-stone-200 p-5 text-sm text-stone-600 sm:col-span-2 lg:col-span-4">No active tables yet.</div>
+                @endforelse
+            </div>
+        </section>
+
+        <section class="mt-8 rounded-lg border border-stone-200 bg-white p-5">
             <h2 class="text-lg font-semibold">Dispatch and order control</h2>
             <div class="mt-4 overflow-x-auto">
                 <table class="min-w-full divide-y divide-stone-200 text-sm">
@@ -29,7 +67,12 @@
                                     <a href="{{ route('tenant.orders.show', [tenant('id'), $order]) }}" class="font-semibold hover:underline">{{ $order->public_code }}</a>
                                     <p class="text-stone-600">{{ $order->customer_name }}</p>
                                 </td>
-                                <td>{{ ucfirst(str_replace('_', ' ', $order->type)) }}</td>
+                                <td>
+                                    {{ $order->typeLabel() }}
+                                    @if ($order->type === 'local' && $order->restaurantTable)
+                                        <p class="text-xs text-stone-500">{{ $order->restaurantTable->code }}</p>
+                                    @endif
+                                </td>
                                 <td><span class="rounded-full bg-stone-100 px-3 py-1 text-xs font-semibold">{{ App\Models\Order::STATUS_FLOW[$order->status] ?? ucfirst($order->status) }}</span></td>
                                 <td>{{ $order->formattedTotal() }}</td>
                                 <td>{{ $order->driver?->name ?? 'Unassigned' }}</td>

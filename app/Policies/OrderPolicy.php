@@ -12,7 +12,7 @@ class OrderPolicy
         return $user->hasAnyRole(['admin', 'kitchen'])
             || $order->user_id === $user->id
             || $order->driver_id === $user->id
-            || ($user->role === 'driver' && $order->status === 'ready');
+            || ($user->role === 'driver' && $order->type === 'delivery' && $order->status === 'ready');
     }
 
     public function manageKitchen(User $user, Order $order): bool

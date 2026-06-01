@@ -13,13 +13,21 @@ class Order extends Model
     use BelongsToTenant;
 
     public const STATUS_FLOW = [
-        'received' => 'Reçue',
-        'preparing' => 'En préparation',
-        'ready' => 'Prête',
-        'assigned' => 'Assignée',
-        'out_for_delivery' => 'En cours de livraison',
-        'delivered' => 'Livrée',
-        'cancelled' => 'Annulée',
+        'received' => 'Received',
+        'preparing' => 'Preparing',
+        'ready' => 'Ready',
+        'assigned' => 'Assigned',
+        'out_for_delivery' => 'Out for delivery',
+        'delivered' => 'Delivered',
+        'collected' => 'Collected',
+        'cancelled' => 'Cancelled',
+    ];
+
+    public const TYPE_LABELS = [
+        'local' => 'Local dine-in',
+        'takeaway' => 'Takeaway',
+        'delivery' => 'Delivery',
+        'click_collect' => 'Takeaway',
     ];
 
     protected $fillable = [
@@ -28,6 +36,7 @@ class Order extends Model
         'user_id',
         'driver_id',
         'customer_address_id',
+        'restaurant_table_id',
         'customer_name',
         'customer_email',
         'customer_phone',
@@ -42,12 +51,14 @@ class Order extends Model
         'placed_at',
         'ready_at',
         'delivered_at',
+        'collected_at',
     ];
 
     protected $casts = [
         'placed_at' => 'datetime',
         'ready_at' => 'datetime',
         'delivered_at' => 'datetime',
+        'collected_at' => 'datetime',
     ];
 
     public function user(): BelongsTo
@@ -65,6 +76,11 @@ class Order extends Model
         return $this->belongsTo(CustomerAddress::class, 'customer_address_id');
     }
 
+    public function restaurantTable(): BelongsTo
+    {
+        return $this->belongsTo(RestaurantTable::class);
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
@@ -78,5 +94,10 @@ class Order extends Model
     public function formattedTotal(): string
     {
         return '$'.number_format($this->total_cents / 100, 2);
+    }
+
+    public function typeLabel(): string
+    {
+        return self::TYPE_LABELS[$this->type] ?? ucfirst(str_replace('_', ' ', $this->type));
     }
 }

@@ -38,7 +38,7 @@ class LandingController extends Controller
                 'monthly_price_cents' => 2900,
                 'max_staff' => 5,
                 'max_active_orders' => 30,
-                'features' => ['Online menu', 'Click & collect', 'Basic kitchen screen', '30-day trial'],
+                'features' => ['Online menu', 'Takeaway checkout', 'Basic kitchen screen', '30-day trial'],
             ],
             (object) [
                 'name' => 'Pro',

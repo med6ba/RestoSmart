@@ -14,7 +14,7 @@ class KitchenController extends Controller
     {
         return view('tenant.kitchen.index', [
             'orders' => Order::query()
-                ->with('items')
+                ->with(['items', 'restaurantTable'])
                 ->whereIn('status', ['received', 'preparing', 'ready'])
                 ->orderByRaw("case status when 'received' then 1 when 'preparing' then 2 else 3 end")
                 ->oldest()
@@ -34,5 +34,14 @@ class KitchenController extends Controller
         $workflow->markReady($order);
 
         return back()->with('status', $order->public_code.' marked ready.');
+    }
+
+    public function collected(Order $order, OrderWorkflowService $workflow): RedirectResponse
+    {
+        abort_unless(in_array($order->type, ['takeaway', 'click_collect'], true) && $order->status === 'ready', 422);
+
+        $workflow->markCollected($order);
+
+        return back()->with('status', $order->public_code.' marked collected.');
     }
 }

@@ -3,7 +3,14 @@
         <h1 class="text-xl font-semibold text-stone-950">Driver mobile dashboard</h1>
     </x-slot>
 
-    <div class="max-w-5xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+    @php
+        $locationRoutes = $assigned
+            ->whereIn('status', ['assigned', 'out_for_delivery'])
+            ->map(fn ($order) => route('tenant.driver.location', [tenant('id'), $order]))
+            ->values();
+    @endphp
+
+    <div class="max-w-5xl mx-auto px-4 py-6 sm:px-6 lg:px-8" x-data="driverLocationReporter(@js($locationRoutes))" x-init="start()">
         @if (session('status'))
             <div class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">{{ session('status') }}</div>
         @endif

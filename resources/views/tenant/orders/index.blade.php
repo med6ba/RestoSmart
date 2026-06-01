@@ -9,7 +9,7 @@
                 <a href="{{ route('tenant.orders.show', [tenant('id'), $order]) }}" class="flex flex-col gap-3 border-b border-stone-100 p-4 hover:bg-stone-50 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <p class="font-semibold">{{ $order->public_code }}</p>
-                        <p class="text-sm text-stone-600">{{ ucfirst(str_replace('_', ' ', $order->type)) }} · {{ $order->created_at->diffForHumans() }}</p>
+                        <p class="text-sm text-stone-600">{{ $order->typeLabel() }} - {{ $order->created_at->diffForHumans() }}</p>
                     </div>
                     <div class="flex items-center gap-3">
                         <span class="rounded-full bg-stone-100 px-3 py-1 text-xs font-semibold">{{ App\Models\Order::STATUS_FLOW[$order->status] ?? ucfirst($order->status) }}</span>

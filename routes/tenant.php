@@ -60,12 +60,14 @@ Route::prefix('{tenant}')
                 Route::get('/kitchen', [KitchenController::class, 'index'])->name('kitchen');
                 Route::post('/kitchen/orders/{order}/preparing', [KitchenController::class, 'preparing'])->name('kitchen.preparing');
                 Route::post('/kitchen/orders/{order}/ready', [KitchenController::class, 'ready'])->name('kitchen.ready');
+                Route::post('/kitchen/orders/{order}/collected', [KitchenController::class, 'collected'])->name('kitchen.collected');
             });
 
             Route::middleware('role:driver')->group(function () {
                 Route::get('/driver', [DriverController::class, 'index'])->name('driver');
                 Route::post('/driver/orders/{order}/pickup', [DriverController::class, 'pickup'])->name('driver.pickup');
                 Route::post('/driver/orders/{order}/deliver', [DriverController::class, 'deliver'])->name('driver.deliver');
+                Route::patch('/driver/orders/{order}/location', [DriverController::class, 'location'])->name('driver.location');
             });
 
             Route::middleware('role:admin')->group(function () {
@@ -74,6 +76,8 @@ Route::prefix('{tenant}')
                 Route::post('/admin/menu-items', [AdminController::class, 'storeMenuItem'])->name('admin.menu-items.store');
                 Route::post('/admin/staff', [AdminController::class, 'inviteStaff'])->name('admin.staff.store');
                 Route::post('/admin/stock-adjustments', [AdminController::class, 'adjustStock'])->name('admin.stock.adjust');
+                Route::post('/admin/tables', [AdminController::class, 'configureTables'])->name('admin.tables.configure');
+                Route::get('/admin/tables/{restaurantTable}/qr', [AdminController::class, 'tableQr'])->name('admin.tables.qr');
                 Route::post('/admin/orders/{order}/assign', [AdminController::class, 'assign'])->name('admin.orders.assign');
             });
         });

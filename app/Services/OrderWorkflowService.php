@@ -8,6 +8,7 @@ use App\Models\Ingredient;
 use App\Models\MenuItem;
 use App\Models\Notification;
 use App\Models\Order;
+use App\Models\RestaurantTable;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -19,16 +20,18 @@ class OrderWorkflowService
     {
         return DB::transaction(function () use ($customer, $cart, $payload) {
             $items = $this->menuItemsForCart($cart);
+            $type = $this->normalizeType($payload['type']);
 
             if ($items->isEmpty()) {
                 abort(422, 'Your cart is empty.');
             }
 
             $subtotal = $items->sum(fn (MenuItem $item) => $item->price_cents * $cart[$item->id]['quantity']);
-            $deliveryFee = $payload['type'] === 'delivery' ? 300 : 0;
+            $deliveryFee = $type === 'delivery' ? 300 : 0;
             $address = null;
+            $table = null;
 
-            if ($payload['type'] === 'delivery') {
+            if ($type === 'delivery') {
                 $address = CustomerAddress::query()->create([
                     'user_id' => $customer->id,
                     'label' => 'Order '.now()->format('M d'),
@@ -37,15 +40,23 @@ class OrderWorkflowService
                 ]);
             }
 
+            if ($type === 'local') {
+                $table = RestaurantTable::query()
+                    ->where('qr_token', $payload['restaurant_table_token'])
+                    ->where('is_active', true)
+                    ->firstOrFail();
+            }
+
             $order = Order::query()->create([
                 'public_code' => 'RS-'.now()->format('His').'-'.Str::upper(Str::random(4)),
                 'user_id' => $customer->id,
                 'customer_address_id' => $address?->id,
+                'restaurant_table_id' => $table?->id,
                 'customer_name' => $payload['customer_name'],
                 'customer_email' => $customer->email,
                 'customer_phone' => $payload['customer_phone'],
-                'delivery_address' => $payload['type'] === 'delivery' ? $payload['delivery_address'] : null,
-                'type' => $payload['type'],
+                'delivery_address' => $type === 'delivery' ? $payload['delivery_address'] : null,
+                'type' => $type,
                 'status' => 'received',
                 'payment_status' => 'pending',
                 'subtotal_cents' => $subtotal,
@@ -73,14 +84,13 @@ class OrderWorkflowService
             if ($order->type === 'delivery') {
                 $order->delivery()->create([
                     'status' => 'waiting',
-                    'route_summary' => 'Restaurant -> '.$order->delivery_address.' (simulated 14 min route)',
-                ]);
+                ] + $this->deliveryRouteAttributes($order));
             }
 
-            $this->notify('kitchen', 'new_order', 'New order '.$order->public_code, 'A '.$order->type.' order is waiting for preparation.');
+            $this->notify('kitchen', 'new_order', 'New order '.$order->public_code, 'A '.$order->typeLabel().' order is waiting for preparation.');
             $this->notify('admin', 'new_order', 'New order '.$order->public_code, $order->formattedTotal().' from '.$order->customer_name);
 
-            return $order->load(['items', 'delivery']);
+            return $order->load(['items', 'delivery', 'restaurantTable']);
         });
     }
 
@@ -99,12 +109,32 @@ class OrderWorkflowService
             'ready_at' => now(),
         ]);
 
-        if ($order->type === 'delivery') {
-            $this->notify('driver', 'delivery_ready', 'Delivery ready', $order->public_code.' is ready for dispatch.');
+        match ($order->type) {
+            'delivery' => $this->notify('driver', 'delivery_ready', 'Delivery ready', $order->public_code.' is ready for dispatch.'),
+            'takeaway' => $this->notifyUser($order->user_id, 'order_update', 'Takeaway ready', $order->public_code.' is ready for pickup.'),
+            'local' => $this->notifyUser($order->user_id, 'order_update', 'Order ready', $order->public_code.' is ready for your table.'),
+            default => null,
+        };
+
+        $this->notify('admin', 'order_ready', 'Order ready', $order->public_code.' can now be assigned, served, or handed over.');
+
+        if (! in_array($order->type, ['local', 'takeaway'], true)) {
+            $this->notifyUser($order->user_id, 'order_update', 'Order ready', $order->public_code.' is ready.');
         }
 
-        $this->notify('admin', 'order_ready', 'Order ready', $order->public_code.' can now be assigned or handed over.');
-        $this->notifyUser($order->user_id, 'order_update', 'Order ready', $order->public_code.' is ready.');
+        return $order;
+    }
+
+    public function markCollected(Order $order): Order
+    {
+        $order->update([
+            'status' => 'collected',
+            'payment_status' => 'paid',
+            'collected_at' => now(),
+        ]);
+
+        $this->notify('admin', 'order_collected', 'Takeaway collected', $order->public_code.' was picked up by '.$order->customer_name.'.');
+        $this->notifyUser($order->user_id, 'order_update', 'Order collected', 'Enjoy your meal.');
 
         return $order;
     }
@@ -122,8 +152,7 @@ class OrderWorkflowService
                 'driver_id' => $driver->id,
                 'status' => 'assigned',
                 'assigned_at' => now(),
-                'route_summary' => 'Restaurant -> '.$order->delivery_address.' (simulated 14 min route)',
-            ],
+            ] + $this->deliveryRouteAttributes($order),
         );
 
         $this->notifyUser($driver->id, 'assigned_delivery', 'Delivery assigned', $order->public_code.' is ready to pick up.');
@@ -178,6 +207,50 @@ class OrderWorkflowService
             ->whereIn('id', array_keys($cart))
             ->where('is_active', true)
             ->get();
+    }
+
+    private function normalizeType(string $type): string
+    {
+        return $type === 'click_collect' ? 'takeaway' : $type;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function deliveryRouteAttributes(Order $order): array
+    {
+        [$restaurantLatitude, $restaurantLongitude, $destinationLatitude, $destinationLongitude] = $this->deliveryCoordinates($order);
+
+        return [
+            'route_summary' => 'Restaurant -> '.$order->delivery_address.' (live route)',
+            'restaurant_latitude' => $restaurantLatitude,
+            'restaurant_longitude' => $restaurantLongitude,
+            'destination_latitude' => $destinationLatitude,
+            'destination_longitude' => $destinationLongitude,
+        ];
+    }
+
+    /**
+     * @return array{0: float, 1: float, 2: float, 3: float}
+     */
+    private function deliveryCoordinates(Order $order): array
+    {
+        $restaurantLatitude = 33.5731;
+        $restaurantLongitude = -7.5898;
+        $seed = abs(crc32($order->public_code.'|'.$order->delivery_address));
+        $latitudeOffset = ((($seed % 70) + 18) / 1000);
+        $longitudeOffset = ((((int) floor($seed / 100)) % 70) + 18) / 1000;
+
+        if ($seed % 2 === 0) {
+            $longitudeOffset *= -1;
+        }
+
+        return [
+            $restaurantLatitude,
+            $restaurantLongitude,
+            $restaurantLatitude + $latitudeOffset,
+            $restaurantLongitude + $longitudeOffset,
+        ];
     }
 
     private function consumeStock(MenuItem $item, int $quantity, Order $order): void

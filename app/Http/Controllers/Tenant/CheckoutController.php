@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CheckoutRequest;
+use App\Models\RestaurantTable;
 use App\Services\CartService;
 use App\Services\OrderWorkflowService;
 use Illuminate\Http\RedirectResponse;
@@ -20,6 +21,7 @@ class CheckoutController extends Controller
         return view('tenant.checkout', [
             'cartLines' => $cart->lines(),
             'subtotalCents' => $cart->subtotalCents(),
+            'hasActiveTables' => RestaurantTable::query()->where('is_active', true)->exists(),
         ]);
     }
 

@@ -11,6 +11,7 @@ use App\Models\Notification;
 use App\Models\Order;
 use App\Models\Plan;
 use App\Models\PlatformNotification;
+use App\Models\RestaurantTable;
 use App\Models\RestaurantApplication;
 use App\Models\StockMovement;
 use App\Models\Subscription;
@@ -33,8 +34,9 @@ class DemoTenantSeeder extends Seeder
         $tenant->run(function () {
             $users = $this->seedUsers();
             $items = $this->seedMenu();
+            $tables = $this->seedTables();
             $this->seedAddresses($users);
-            $this->seedOrders($users, $items);
+            $this->seedOrders($users, $items, $tables);
             $this->seedNotifications($users);
         });
     }
@@ -294,11 +296,48 @@ class DemoTenantSeeder extends Seeder
     }
 
     /**
+     * @return array<string, RestaurantTable>
+     */
+    private function seedTables(): array
+    {
+        $tables = [];
+
+        for ($i = 1; $i <= 12; $i++) {
+            $code = sprintf('T%03d', $i);
+
+            $tables[$code] = RestaurantTable::query()->updateOrCreate(
+                ['code' => $code],
+                [
+                    'qr_token' => 'DEMO-TABLE-'.$code,
+                    'sort_order' => $i,
+                    'is_active' => true,
+                ],
+            );
+        }
+
+        return $tables;
+    }
+
+    /**
      * @param  array<string, User>  $users
      * @param  array<string, MenuItem>  $items
+     * @param  array<string, RestaurantTable>  $tables
      */
-    private function seedOrders(array $users, array $items): void
+    private function seedOrders(array $users, array $items, array $tables): void
     {
+        $this->order('RS-DEMO-1000', $users['client'], null, [
+            [$items['veggie_bowl'], 1, null],
+            [$items['mint_tea'], 1, null],
+        ], [
+            'type' => 'local',
+            'status' => 'received',
+            'payment_status' => 'pending',
+            'restaurant_table_id' => $tables['T001']->id,
+            'delivery_address' => null,
+            'kitchen_notes' => 'Table QR scanned.',
+            'placed_at' => now()->subMinutes(7),
+        ]);
+
         $this->order('RS-DEMO-1001', $users['client'], null, [
             [$items['chicken_bowl'], 1, null],
             [$items['mint_tea'], 1, null],
@@ -314,7 +353,7 @@ class DemoTenantSeeder extends Seeder
         $this->order('RS-DEMO-1002', $users['client'], null, [
             [$items['kofta_wrap'], 2, 'Extra pickles'],
         ], [
-            'type' => 'click_collect',
+            'type' => 'takeaway',
             'status' => 'preparing',
             'payment_status' => 'pending',
             'delivery_address' => null,
@@ -367,11 +406,12 @@ class DemoTenantSeeder extends Seeder
                 'user_id' => $customer->id,
                 'driver_id' => $driver?->id,
                 'customer_address_id' => $address?->id,
+                'restaurant_table_id' => $payload['restaurant_table_id'] ?? null,
                 'customer_name' => $customer->name,
                 'customer_email' => $customer->email,
                 'customer_phone' => $customer->phone,
                 'delivery_address' => $payload['delivery_address'],
-                'type' => $payload['type'],
+                'type' => $payload['type'] === 'click_collect' ? 'takeaway' : $payload['type'],
                 'status' => $payload['status'],
                 'payment_status' => $payload['payment_status'],
                 'subtotal_cents' => $subtotal,
@@ -421,7 +461,14 @@ class DemoTenantSeeder extends Seeder
                 [
                     'driver_id' => $driver?->id,
                     'status' => $deliveryStatus,
-                    'route_summary' => 'Restaurant -> '.$payload['delivery_address'].' (simulated 14 min route)',
+                    'route_summary' => 'Restaurant -> '.$payload['delivery_address'].' (live route)',
+                    'restaurant_latitude' => 33.5731,
+                    'restaurant_longitude' => -7.5898,
+                    'destination_latitude' => 33.6261,
+                    'destination_longitude' => -7.5328,
+                    'driver_latitude' => in_array($payload['status'], ['out_for_delivery', 'delivered'], true) ? 33.6021 : null,
+                    'driver_longitude' => in_array($payload['status'], ['out_for_delivery', 'delivered'], true) ? -7.5628 : null,
+                    'last_location_at' => in_array($payload['status'], ['out_for_delivery', 'delivered'], true) ? now()->subMinutes(2) : null,
                     'assigned_at' => in_array($payload['status'], ['assigned', 'out_for_delivery', 'delivered'], true) ? now()->subMinutes(20) : null,
                     'picked_up_at' => in_array($payload['status'], ['out_for_delivery', 'delivered'], true) ? now()->subMinutes(12) : null,
                     'delivered_at' => $payload['status'] === 'delivered' ? $payload['delivered_at'] ?? now()->subMinutes(2) : null,

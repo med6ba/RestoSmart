@@ -8,7 +8,7 @@
                 <div>
                     <p class="text-sm font-semibold uppercase tracking-wide text-red-700">{{ tenant('name') }}</p>
                     <h1 class="mt-2 text-3xl font-bold tracking-tight">Interactive menu</h1>
-                    <p class="mt-2 text-stone-600">Choose delivery or click & collect at checkout. Kitchen and driver screens update from the same order flow.</p>
+                    <p class="mt-2 text-stone-600">Choose local dine-in, takeaway, or delivery at checkout. Kitchen and driver screens update from the same order flow.</p>
                 </div>
                 <div class="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3">
                     <p class="text-sm text-stone-600">Cart</p>
