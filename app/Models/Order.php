@@ -1,0 +1,82 @@
+<?php
+
+namespace App\Models;
+
+use App\Models\Concerns\BelongsToTenant;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+
+class Order extends Model
+{
+    use BelongsToTenant;
+
+    public const STATUS_FLOW = [
+        'received' => 'Reçue',
+        'preparing' => 'En préparation',
+        'ready' => 'Prête',
+        'assigned' => 'Assignée',
+        'out_for_delivery' => 'En cours de livraison',
+        'delivered' => 'Livrée',
+        'cancelled' => 'Annulée',
+    ];
+
+    protected $fillable = [
+        'tenant_id',
+        'public_code',
+        'user_id',
+        'driver_id',
+        'customer_address_id',
+        'customer_name',
+        'customer_email',
+        'customer_phone',
+        'delivery_address',
+        'type',
+        'status',
+        'payment_status',
+        'subtotal_cents',
+        'delivery_fee_cents',
+        'total_cents',
+        'kitchen_notes',
+        'placed_at',
+        'ready_at',
+        'delivered_at',
+    ];
+
+    protected $casts = [
+        'placed_at' => 'datetime',
+        'ready_at' => 'datetime',
+        'delivered_at' => 'datetime',
+    ];
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function driver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'driver_id');
+    }
+
+    public function address(): BelongsTo
+    {
+        return $this->belongsTo(CustomerAddress::class, 'customer_address_id');
+    }
+
+    public function items(): HasMany
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+
+    public function delivery(): HasOne
+    {
+        return $this->hasOne(Delivery::class);
+    }
+
+    public function formattedTotal(): string
+    {
+        return '$'.number_format($this->total_cents / 100, 2);
+    }
+}
