@@ -12,6 +12,8 @@ class CartController extends Controller
 {
     public function add(Request $request, MenuItem $menuItem, CartService $cart): RedirectResponse
     {
+        $this->authorizeClientOrdering($request);
+
         $data = $request->validate([
             'quantity' => ['nullable', 'integer', 'min:1', 'max:20'],
             'notes' => ['nullable', 'string', 'max:240'],
@@ -21,11 +23,13 @@ class CartController extends Controller
 
         $cart->add($menuItem, $data['quantity'] ?? 1, $data['notes'] ?? null);
 
-        return back()->with('status', $menuItem->name.' added to cart.');
+        return back()->with('status', __(':item added to cart.', ['item' => $menuItem->name]));
     }
 
     public function update(Request $request, MenuItem $menuItem, CartService $cart): RedirectResponse
     {
+        $this->authorizeClientOrdering($request);
+
         $data = $request->validate([
             'quantity' => ['required', 'integer', 'min:0', 'max:20'],
             'notes' => ['nullable', 'string', 'max:240'],
@@ -33,13 +37,20 @@ class CartController extends Controller
 
         $cart->update($menuItem->id, $data['quantity'], $data['notes'] ?? null);
 
-        return back()->with('status', 'Cart updated.');
+        return back()->with('status', __('Cart updated.'));
     }
 
-    public function clear(CartService $cart): RedirectResponse
+    public function clear(Request $request, CartService $cart): RedirectResponse
     {
+        $this->authorizeClientOrdering($request);
+
         $cart->clear();
 
-        return back()->with('status', 'Cart cleared.');
+        return back()->with('status', __('Cart cleared.'));
+    }
+
+    private function authorizeClientOrdering(Request $request): void
+    {
+        abort_if($request->user() && ! $request->user()->hasAnyRole('client'), 403, __('Only client accounts can place orders.'));
     }
 }

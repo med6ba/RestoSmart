@@ -15,11 +15,11 @@
         <x-auth-session-status class="mb-4" :status="session('status')" />
 
         @if ($demoAccounts !== [])
-            <div class="rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-900/70 dark:bg-red-950/30">
-                <p class="text-sm font-semibold text-red-900 dark:text-red-100">{{ __('Auto fill') }}</p>
+            <div class="rounded-lg border border-brand-200 bg-brand-50 p-3 dark:border-brand-900/70 dark:bg-brand-950/30">
+                <p class="text-sm font-semibold text-brand-900 dark:text-brand-100">{{ __('Auto fill') }}</p>
                 <div class="mt-3 grid gap-2 sm:grid-cols-2">
                     @foreach ($demoAccounts as $account)
-                        <button type="button" x-on:click="fillDemo(@js($account['email']))" class="flex items-center justify-between gap-3 rounded-md border border-red-200 bg-white px-3 py-2 text-left text-sm font-semibold text-zinc-800 transition hover:border-red-300 hover:bg-red-50 app-focus dark:border-red-900/70 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-red-950/40">
+                        <button type="button" x-on:click="fillDemo(@js($account['email']))" class="flex items-center justify-between gap-3 rounded-md border border-brand-200 bg-white px-3 py-2 text-left text-sm font-semibold text-zinc-800 transition hover:border-brand-300 hover:bg-brand-50 app-focus dark:border-brand-900/70 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-brand-950/40">
                             <span>{{ $account['label'] }}</span>
                         </button>
                     @endforeach

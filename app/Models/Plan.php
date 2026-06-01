@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Money;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -29,6 +30,6 @@ class Plan extends Model
 
     public function formattedPrice(): string
     {
-        return '$'.number_format($this->monthly_price_cents / 100, 0);
+        return Money::mad($this->monthly_price_cents, 0);
     }
 }

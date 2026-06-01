@@ -1,3 +1,7 @@
+@php
+    $modalToShow = old('_modal');
+@endphp
+
 <x-app-layout>
     <x-slot name="header">
         <h1 class="text-xl font-semibold text-zinc-950 dark:text-white">{{ __('Super command center') }}</h1>
@@ -10,10 +14,10 @@
 
         <section class="grid gap-4 md:grid-cols-5">
             <div class="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"><p class="text-sm text-zinc-600 dark:text-zinc-300">{{ __('Restaurants') }}</p><p class="mt-2 text-3xl font-bold">{{ $stats['restaurants'] }}</p></div>
-            <div class="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"><p class="text-sm text-zinc-600 dark:text-zinc-300">{{ __('Active') }}</p><p class="mt-2 text-3xl font-bold text-red-700 dark:text-red-300">{{ $stats['active'] }}</p></div>
+            <div class="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"><p class="text-sm text-zinc-600 dark:text-zinc-300">{{ __('Active') }}</p><p class="mt-2 text-3xl font-bold text-brand-700 dark:text-brand-300">{{ $stats['active'] }}</p></div>
             <div class="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"><p class="text-sm text-zinc-600 dark:text-zinc-300">{{ __('Trials') }}</p><p class="mt-2 text-3xl font-bold text-amber-700 dark:text-amber-300">{{ $stats['trial'] }}</p></div>
             <div class="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"><p class="text-sm text-zinc-600 dark:text-zinc-300">{{ __('Pending') }}</p><p class="mt-2 text-3xl font-bold">{{ $stats['pending'] }}</p></div>
-            <div class="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"><p class="text-sm text-zinc-600 dark:text-zinc-300">{{ __('MRR') }}</p><p class="mt-2 text-3xl font-bold">${{ number_format($stats['mrr'] / 100, 0) }}</p></div>
+            <div class="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"><p class="text-sm text-zinc-600 dark:text-zinc-300">{{ __('MRR') }}</p><p class="mt-2 text-3xl font-bold">{{ \App\Support\Money::mad($stats['mrr'], 0) }}</p></div>
         </section>
 
         <section class="mt-8 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
@@ -41,7 +45,7 @@
                                     <td class="py-3 text-right">
                                         @if ($application->status === 'pending')
                                             <div class="inline-flex gap-2">
-                                                <button type="button" x-data="" x-on:click.prevent="$dispatch('open-modal', 'approve-application-{{ $application->id }}')" class="rounded-lg bg-red-700 px-3 py-2 text-xs font-semibold text-white hover:bg-red-800 app-focus">{{ __('Approve') }}</button>
+                                                <button type="button" x-data="" x-on:click.prevent="$dispatch('open-modal', 'approve-application-{{ $application->id }}')" class="rounded-lg bg-brand-700 px-3 py-2 text-xs font-semibold text-white hover:bg-brand-800 app-focus">{{ __('Approve') }}</button>
                                                 <button type="button" x-data="" x-on:click.prevent="$dispatch('open-modal', 'reject-application-{{ $application->id }}')" class="rounded-lg border border-zinc-300 px-3 py-2 text-xs font-semibold hover:bg-zinc-100 app-focus dark:border-zinc-700 dark:hover:bg-zinc-800">{{ __('Reject') }}</button>
                                             </div>
 
@@ -124,22 +128,43 @@
                             </div>
                             <span class="rounded-full bg-zinc-100 px-3 py-1 text-xs font-semibold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">{{ ucfirst($tenant->status) }}</span>
                         </div>
-                        <form method="POST" action="{{ route('tenants.lifecycle.update', $tenant) }}" class="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                        <button type="button" x-data="" x-on:click.prevent="$dispatch('open-modal', 'update-tenant-{{ $tenant->id }}')" class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-300 px-3 py-2 text-xs font-semibold hover:bg-zinc-100 app-focus dark:border-zinc-700 dark:hover:bg-zinc-800">
+                            <x-icon name="settings" class="h-4 w-4" />
+                            {{ __('Update subscription') }}
+                        </button>
+                    </article>
+
+                    <x-modal name="update-tenant-{{ $tenant->id }}" :show="$modalToShow === 'update-tenant-'.$tenant->id" maxWidth="lg" focusable>
+                        <form method="POST" action="{{ route('tenants.lifecycle.update', $tenant) }}" class="p-6">
                             @csrf
                             @method('PATCH')
-                            <select name="status" class="rounded-md border-zinc-300 text-sm dark:border-zinc-700">
-                                @foreach (['trial', 'active', 'expired', 'suspended'] as $status)
-                                    <option value="{{ $status }}" @selected($tenant->status === $status)>{{ ucfirst($status) }}</option>
-                                @endforeach
-                            </select>
-                            <select name="plan_id" class="rounded-md border-zinc-300 text-sm dark:border-zinc-700">
-                                @foreach ($plans as $plan)
-                                    <option value="{{ $plan->id }}" @selected($tenant->plan_id === $plan->id)>{{ $plan->name }}</option>
-                                @endforeach
-                            </select>
-                            <button class="rounded-lg bg-zinc-900 px-3 py-2 text-xs font-semibold text-white hover:bg-zinc-800 app-focus dark:bg-red-700 dark:hover:bg-red-800">{{ __('Save') }}</button>
+                            <input type="hidden" name="_modal" value="update-tenant-{{ $tenant->id }}">
+                            <h3 class="text-lg font-semibold text-zinc-950 dark:text-white">{{ __('Update subscription') }}</h3>
+                            <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-300">{{ $tenant->name }} · /{{ $tenant->id }}</p>
+                            <div class="mt-5 grid gap-4 sm:grid-cols-2">
+                                <label class="grid gap-1 text-sm font-semibold">
+                                    {{ __('Status') }}
+                                    <select name="status" class="rounded-md border-zinc-300 text-sm dark:border-zinc-700">
+                                        @foreach (['trial', 'active', 'expired', 'suspended'] as $status)
+                                            <option value="{{ $status }}" @selected(old('status', $tenant->status) === $status)>{{ ucfirst($status) }}</option>
+                                        @endforeach
+                                    </select>
+                                </label>
+                                <label class="grid gap-1 text-sm font-semibold">
+                                    {{ __('Plan') }}
+                                    <select name="plan_id" class="rounded-md border-zinc-300 text-sm dark:border-zinc-700">
+                                        @foreach ($plans as $plan)
+                                            <option value="{{ $plan->id }}" @selected((int) old('plan_id', $tenant->plan_id) === $plan->id)>{{ $plan->name }} · {{ $plan->formattedPrice() }}</option>
+                                        @endforeach
+                                    </select>
+                                </label>
+                            </div>
+                            <div class="mt-6 flex justify-end gap-3">
+                                <x-secondary-button x-on:click="$dispatch('close')">{{ __('Cancel') }}</x-secondary-button>
+                                <x-primary-button>{{ __('Save changes') }}</x-primary-button>
+                            </div>
                         </form>
-                    </article>
+                    </x-modal>
                 @endforeach
             </div>
         </section>

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\TenantRoleUpdated;
 use App\Models\CustomerAddress;
 use App\Models\Delivery;
 use App\Models\Ingredient;
@@ -13,17 +14,18 @@ use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Throwable;
 
 class OrderWorkflowService
 {
     public function placeOrder(User $customer, array $cart, array $payload): Order
     {
-        return DB::transaction(function () use ($customer, $cart, $payload) {
+        $order = DB::transaction(function () use ($customer, $cart, $payload) {
             $items = $this->menuItemsForCart($cart);
             $type = $this->normalizeType($payload['type']);
 
             if ($items->isEmpty()) {
-                abort(422, 'Your cart is empty.');
+                abort(422, __('Your cart is empty.'));
             }
 
             $subtotal = $items->sum(fn (MenuItem $item) => $item->price_cents * $cart[$item->id]['quantity']);
@@ -92,12 +94,17 @@ class OrderWorkflowService
 
             return $order->load(['items', 'delivery', 'restaurantTable']);
         });
+
+        $this->broadcastTenantUpdate(['admin', 'kitchen', 'client'], 'orders', 'order.placed', $order, __('New order :code received.', ['code' => $order->public_code]));
+
+        return $order;
     }
 
     public function markPreparing(Order $order): Order
     {
         $order->update(['status' => 'preparing']);
         $this->notifyUser($order->user_id, 'order_update', 'Order in preparation', $order->public_code.' is now in the kitchen.');
+        $this->broadcastTenantUpdate(['admin', 'kitchen', 'client'], 'orders', 'order.preparing', $order, __('Order :code is now preparing.', ['code' => $order->public_code]));
 
         return $order;
     }
@@ -122,6 +129,12 @@ class OrderWorkflowService
             $this->notifyUser($order->user_id, 'order_update', 'Order ready', $order->public_code.' is ready.');
         }
 
+        $roles = $order->type === 'delivery'
+            ? ['admin', 'kitchen', 'driver', 'client']
+            : ['admin', 'kitchen', 'client'];
+
+        $this->broadcastTenantUpdate($roles, 'orders', 'order.ready', $order, __('Order :code is ready.', ['code' => $order->public_code]));
+
         return $order;
     }
 
@@ -135,6 +148,7 @@ class OrderWorkflowService
 
         $this->notify('admin', 'order_collected', 'Takeaway collected', $order->public_code.' was picked up by '.$order->customer_name.'.');
         $this->notifyUser($order->user_id, 'order_update', 'Order collected', 'Enjoy your meal.');
+        $this->broadcastTenantUpdate(['admin', 'kitchen', 'client'], 'orders', 'order.collected', $order, __('Order :code was collected.', ['code' => $order->public_code]));
 
         return $order;
     }
@@ -157,6 +171,7 @@ class OrderWorkflowService
 
         $this->notifyUser($driver->id, 'assigned_delivery', 'Delivery assigned', $order->public_code.' is ready to pick up.');
         $this->notifyUser($order->user_id, 'order_update', 'Driver assigned', 'A driver is taking care of '.$order->public_code.'.');
+        $this->broadcastTenantUpdate(['admin', 'driver', 'client'], 'orders', 'order.assigned', $order->fresh(['driver']), __('Order :code was assigned.', ['code' => $order->public_code]));
 
         return $order;
     }
@@ -175,6 +190,7 @@ class OrderWorkflowService
         ]);
 
         $this->notifyUser($order->user_id, 'order_update', 'Order on the way', $order->public_code.' is out for delivery.');
+        $this->broadcastTenantUpdate(['admin', 'driver', 'client'], 'orders', 'order.out_for_delivery', $order, __('Order :code is out for delivery.', ['code' => $order->public_code]));
 
         return $order;
     }
@@ -196,6 +212,7 @@ class OrderWorkflowService
 
         $this->notify('admin', 'order_delivered', 'Order delivered', $order->public_code.' was completed by '.$driver->name.'.');
         $this->notifyUser($order->user_id, 'order_update', 'Order delivered', 'Thanks for ordering with us.');
+        $this->broadcastTenantUpdate(['admin', 'driver', 'client'], 'orders', 'order.delivered', $order, __('Order :code was delivered.', ['code' => $order->public_code]));
 
         return $order;
     }
@@ -219,37 +236,8 @@ class OrderWorkflowService
      */
     private function deliveryRouteAttributes(Order $order): array
     {
-        [$restaurantLatitude, $restaurantLongitude, $destinationLatitude, $destinationLongitude] = $this->deliveryCoordinates($order);
-
         return [
-            'route_summary' => 'Restaurant -> '.$order->delivery_address.' (live route)',
-            'restaurant_latitude' => $restaurantLatitude,
-            'restaurant_longitude' => $restaurantLongitude,
-            'destination_latitude' => $destinationLatitude,
-            'destination_longitude' => $destinationLongitude,
-        ];
-    }
-
-    /**
-     * @return array{0: float, 1: float, 2: float, 3: float}
-     */
-    private function deliveryCoordinates(Order $order): array
-    {
-        $restaurantLatitude = 33.5731;
-        $restaurantLongitude = -7.5898;
-        $seed = abs(crc32($order->public_code.'|'.$order->delivery_address));
-        $latitudeOffset = ((($seed % 70) + 18) / 1000);
-        $longitudeOffset = ((((int) floor($seed / 100)) % 70) + 18) / 1000;
-
-        if ($seed % 2 === 0) {
-            $longitudeOffset *= -1;
-        }
-
-        return [
-            $restaurantLatitude,
-            $restaurantLongitude,
-            $restaurantLatitude + $latitudeOffset,
-            $restaurantLongitude + $longitudeOffset,
+            'route_summary' => 'Restaurant -> '.$order->delivery_address,
         ];
     }
 
@@ -294,5 +282,29 @@ class OrderWorkflowService
             'title' => $title,
             'body' => $body,
         ]);
+    }
+
+    /**
+     * @param  array<int, string>  $roles
+     */
+    private function broadcastTenantUpdate(array $roles, string $area, string $type, Order $order, string $message): void
+    {
+        try {
+            TenantRoleUpdated::dispatch((string) tenant('id'), $roles, $area, $type, [
+                'message' => $message,
+                'order' => [
+                    'id' => $order->id,
+                    'public_code' => $order->public_code,
+                    'status' => $order->status,
+                    'status_label' => __(Order::STATUS_FLOW[$order->status] ?? ucfirst($order->status)),
+                    'type' => $order->type,
+                    'type_label' => $order->typeLabel(),
+                    'driver' => $order->driver?->name,
+                    'total' => $order->formattedTotal(),
+                ],
+            ]);
+        } catch (Throwable $exception) {
+            report($exception);
+        }
     }
 }

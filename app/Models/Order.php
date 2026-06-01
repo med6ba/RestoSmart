@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToTenant;
+use App\Support\Money;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -93,11 +94,11 @@ class Order extends Model
 
     public function formattedTotal(): string
     {
-        return '$'.number_format($this->total_cents / 100, 2);
+        return Money::mad($this->total_cents);
     }
 
     public function typeLabel(): string
     {
-        return self::TYPE_LABELS[$this->type] ?? ucfirst(str_replace('_', ' ', $this->type));
+        return __(self::TYPE_LABELS[$this->type] ?? ucfirst(str_replace('_', ' ', $this->type)));
     }
 }

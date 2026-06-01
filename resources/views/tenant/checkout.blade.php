@@ -11,31 +11,43 @@
         <h1 class="text-xl font-semibold text-stone-950">Checkout</h1>
     </x-slot>
 
-    <div class="max-w-5xl mx-auto grid gap-6 px-4 py-8 lg:grid-cols-[1fr_320px] sm:px-6 lg:px-8">
+    <div class="max-w-5xl mx-auto grid gap-6 px-4 py-8 lg:grid-cols-[1fr_320px] sm:px-6 lg:px-8" data-realtime-scope="tables,menu">
         <form
+            id="checkout-form"
             method="POST"
             action="{{ route('tenant.checkout.store', tenant('id')) }}"
             class="rounded-lg border border-stone-200 bg-white p-5"
-            x-data="checkoutFlow(@js($selectedType), @js(old('restaurant_table_token', '')))"
+            x-data="checkoutFlow(@js($selectedType), @js(old('restaurant_table_token', '')), @js([
+                'scanned' => __('Table QR scanned.'),
+                'scanning' => __('Scanning table QR...'),
+                'unsupported' => __('QR scanning is not available in this browser.'),
+                'camera' => __('Camera access was not available.'),
+                'unreadable' => __('The QR code could not be read.'),
+                'notTable' => __('This QR code is not a table QR.'),
+                'notRegistered' => __('This table QR is not registered for this restaurant.'),
+                'validationFailed' => __('The table QR could not be validated. Please try again.'),
+                'tableScanned' => __('Table :table scanned.'),
+            ]))"
+            x-init="setValidateUrl(@js(route('tenant.checkout.table-qr', tenant('id'))))"
             x-on:submit="stopScanner()"
         >
             @csrf
 
             <div class="grid gap-4 lg:grid-cols-3">
-                <label class="rounded-lg border border-stone-200 p-4" :class="type === 'local' ? 'border-red-500 bg-red-50' : ''">
-                    <input type="radio" name="type" value="local" class="text-red-700" @change="setType('local')" @checked($selectedType === 'local') @disabled(! $hasActiveTables)>
+                <label class="rounded-lg border border-stone-200 p-4" :class="type === 'local' ? 'border-brand-500 bg-brand-50' : ''">
+                    <input type="radio" name="type" value="local" class="text-brand-700" @change="setType('local')" @checked($selectedType === 'local') @disabled(! $hasActiveTables)>
                     <span class="ml-2 font-semibold">Local</span>
                     <p class="mt-1 text-sm text-stone-600">Dine-in table QR scan.</p>
                 </label>
-                <label class="rounded-lg border border-stone-200 p-4" :class="type === 'takeaway' ? 'border-red-500 bg-red-50' : ''">
-                    <input type="radio" name="type" value="takeaway" class="text-red-700" @change="setType('takeaway')" @checked($selectedType === 'takeaway')>
+                <label class="rounded-lg border border-stone-200 p-4" :class="type === 'takeaway' ? 'border-brand-500 bg-brand-50' : ''">
+                    <input type="radio" name="type" value="takeaway" class="text-brand-700" @change="setType('takeaway')" @checked($selectedType === 'takeaway')>
                     <span class="ml-2 font-semibold">Takeaway</span>
                     <p class="mt-1 text-sm text-stone-600">Pickup after the kitchen marks it ready.</p>
                 </label>
-                <label class="rounded-lg border border-stone-200 p-4" :class="type === 'delivery' ? 'border-red-500 bg-red-50' : ''">
-                    <input type="radio" name="type" value="delivery" class="text-red-700" @change="setType('delivery')" @checked($selectedType === 'delivery')>
+                <label class="rounded-lg border border-stone-200 p-4" :class="type === 'delivery' ? 'border-brand-500 bg-brand-50' : ''">
+                    <input type="radio" name="type" value="delivery" class="text-brand-700" @change="setType('delivery')" @checked($selectedType === 'delivery')>
                     <span class="ml-2 font-semibold">Delivery</span>
-                    <p class="mt-1 text-sm text-stone-600">Driver dispatch with live tracking.</p>
+                    <p class="mt-1 text-sm text-stone-600">{{ __('Driver dispatch with delivery status.') }}</p>
                 </label>
             </div>
             <x-input-error :messages="$errors->get('type')" class="mt-2" />
@@ -54,7 +66,7 @@
                         </div>
                         <div class="flex flex-col justify-center">
                             <div class="flex flex-wrap gap-2">
-                                <button type="button" @click="startScanner()" class="inline-flex items-center gap-2 rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white app-focus hover:bg-red-800">
+                                <button type="button" @click="startScanner()" class="inline-flex items-center gap-2 rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold text-white app-focus hover:bg-brand-800">
                                     <x-icon name="qr-code" class="h-4 w-4" />
                                     Scan table QR
                                 </button>
@@ -63,7 +75,7 @@
                                 </button>
                             </div>
 
-                            <p x-show="scanStatus" x-text="scanStatus" class="mt-3 text-sm font-semibold text-red-700"></p>
+                            <p x-show="scanStatus" x-text="scanStatus" class="mt-3 text-sm font-semibold text-brand-700"></p>
                             <p x-show="scanError" x-text="scanError" class="mt-3 text-sm font-semibold text-amber-700"></p>
 
                             <div class="mt-4">
@@ -107,13 +119,29 @@
             </div>
 
             <button
-                class="mt-6 inline-flex items-center gap-2 rounded-lg bg-red-700 px-5 py-3 text-sm font-semibold text-white app-focus hover:bg-red-800 disabled:cursor-not-allowed disabled:bg-stone-400"
+                type="button"
+                class="mt-6 inline-flex items-center gap-2 rounded-lg bg-brand-700 px-5 py-3 text-sm font-semibold text-white app-focus hover:bg-brand-800 disabled:cursor-not-allowed disabled:bg-stone-400"
                 x-bind:disabled="type === 'local' && ! tableToken"
+                x-on:click.prevent="$el.form.reportValidity() && $dispatch('open-modal', 'place-order')"
             >
                 <x-icon name="check-circle" class="h-4 w-4" />
                 Place order
             </button>
         </form>
+
+        <x-modal name="place-order" maxWidth="md" focusable>
+            <div class="p-6">
+                <h3 class="text-lg font-semibold text-zinc-950 dark:text-white">Place this order?</h3>
+                <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-300">Kitchen and dispatch screens will receive the order right away.</p>
+                <div class="mt-6 flex justify-end gap-3">
+                    <x-secondary-button x-on:click="$dispatch('close')">Cancel</x-secondary-button>
+                    <x-primary-button form="checkout-form" class="gap-2">
+                        <x-icon name="check-circle" class="h-4 w-4" />
+                        Confirm order
+                    </x-primary-button>
+                </div>
+            </div>
+        </x-modal>
 
         <aside class="h-fit rounded-lg border border-stone-200 bg-white p-5">
             <h2 class="text-lg font-semibold">Order summary</h2>
@@ -121,16 +149,16 @@
                 @foreach ($cartLines as $line)
                     <div class="flex justify-between gap-4 border-t border-stone-100 pt-3 text-sm">
                         <span>{{ $line['quantity'] }} x {{ $line['item']->name }}</span>
-                        <span class="font-semibold">${{ number_format($line['total_cents'] / 100, 2) }}</span>
+                        <span class="font-semibold">{{ \App\Support\Money::mad($line['total_cents']) }}</span>
                     </div>
                 @endforeach
                 <div class="flex justify-between border-t border-stone-200 pt-3 font-semibold">
                     <span>Subtotal</span>
-                    <span>${{ number_format($subtotalCents / 100, 2) }}</span>
+                    <span>{{ \App\Support\Money::mad($subtotalCents) }}</span>
                 </div>
                 <div class="flex justify-between text-sm text-stone-600">
                     <span>Delivery fee</span>
-                    <span>$3.00 for delivery</span>
+                    <span>{{ \App\Support\Money::mad(300) }} for delivery</span>
                 </div>
             </div>
         </aside>

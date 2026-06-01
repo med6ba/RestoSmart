@@ -30,7 +30,7 @@
             aria-pressed="{{ $currentLocale === $locale ? 'true' : 'false' }}"
             @class([
                 'grid h-8 min-w-8 place-items-center rounded-md px-2 text-xs font-bold transition app-focus',
-                'bg-white text-red-700 shadow-sm dark:bg-zinc-800 dark:text-red-200' => $currentLocale === $locale,
+                'bg-white text-brand-700 shadow-sm dark:bg-zinc-800 dark:text-brand-200' => $currentLocale === $locale,
                 'text-zinc-500 hover:bg-white/70 hover:text-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white' => $currentLocale !== $locale,
             ])
         >

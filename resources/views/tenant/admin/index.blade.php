@@ -1,195 +1,405 @@
+@php
+    $modalToShow = old('_modal');
+    $statCards = [
+        ['label' => 'Today orders', 'value' => $stats['today_orders'], 'icon' => 'receipt', 'valueClass' => 'text-zinc-950 dark:text-white'],
+        ['label' => 'Paid revenue', 'value' => \App\Support\Money::mad($stats['revenue'], 0), 'icon' => 'badge-dollar', 'valueClass' => 'text-zinc-950 dark:text-white'],
+        ['label' => 'Active orders', 'value' => $stats['active_orders'], 'icon' => 'clipboard-list', 'valueClass' => 'text-brand-700 dark:text-brand-300'],
+        ['label' => 'Low stock', 'value' => $stats['low_stock'], 'icon' => 'archive', 'valueClass' => 'text-amber-700 dark:text-amber-300'],
+    ];
+@endphp
+
 <x-app-layout>
     <x-slot name="header">
-        <h1 class="text-xl font-semibold text-stone-950">Restaurant admin dashboard</h1>
+        <div class="flex flex-col gap-1">
+            <p class="text-sm font-semibold uppercase tracking-wide text-brand-700 dark:text-brand-300">{{ tenant('name') }}</p>
+            <h1 class="text-xl font-semibold text-zinc-950 dark:text-white">Restaurant admin dashboard</h1>
+        </div>
     </x-slot>
 
-    <div class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8" data-realtime-scope="orders,menu,tables,stock,staff">
         @if (session('status'))
-            <div class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">{{ session('status') }}</div>
+            <div class="status-toast mb-6">{{ session('status') }}</div>
         @endif
 
         <section class="grid gap-4 md:grid-cols-4">
-            <div class="rounded-lg border border-stone-200 bg-white p-4"><p class="text-sm text-stone-600">Today orders</p><p class="mt-2 text-3xl font-bold">{{ $stats['today_orders'] }}</p></div>
-            <div class="rounded-lg border border-stone-200 bg-white p-4"><p class="text-sm text-stone-600">Paid revenue</p><p class="mt-2 text-3xl font-bold">${{ number_format($stats['revenue'] / 100, 0) }}</p></div>
-            <div class="rounded-lg border border-stone-200 bg-white p-4"><p class="text-sm text-stone-600">Active orders</p><p class="mt-2 text-3xl font-bold text-red-700">{{ $stats['active_orders'] }}</p></div>
-            <div class="rounded-lg border border-stone-200 bg-white p-4"><p class="text-sm text-stone-600">Low stock</p><p class="mt-2 text-3xl font-bold text-amber-700">{{ $stats['low_stock'] }}</p></div>
+            @foreach ($statCards as $stat)
+                <article class="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+                    <div class="flex items-center justify-between gap-3">
+                        <p class="text-sm font-medium text-zinc-600 dark:text-zinc-300">{{ $stat['label'] }}</p>
+                        <span class="grid h-9 w-9 place-items-center rounded-lg bg-brand-50 text-brand-700 dark:bg-brand-950/40 dark:text-brand-200">
+                            <x-icon :name="$stat['icon']" class="h-4 w-4" />
+                        </span>
+                    </div>
+                    <p class="mt-3 text-3xl font-bold {{ $stat['valueClass'] }}">{{ $stat['value'] }}</p>
+                </article>
+            @endforeach
         </section>
 
-        <section class="mt-8 rounded-lg border border-stone-200 bg-white p-5">
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+        <section class="mt-8 rounded-lg border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div>
-                    <h2 class="text-lg font-semibold">Dining room tables</h2>
-                    <p class="mt-1 text-sm text-stone-600">{{ $tableCount }} active tables with unique IDs and QR codes.</p>
+                    <p class="text-sm font-semibold uppercase tracking-wide text-brand-700 dark:text-brand-300">{{ __('Table QR kit') }}</p>
+                    <h2 class="mt-1 text-lg font-semibold">{{ __('Dining room tables') }}</h2>
+                    <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-300">{{ trans_choice(':count active table with unique IDs and guest-ready QR codes.|:count active tables with unique IDs and guest-ready QR codes.', $tableCount, ['count' => $tableCount]) }}</p>
                 </div>
-                <form method="POST" action="{{ route('tenant.admin.tables.configure', tenant('id')) }}" class="grid gap-2 sm:grid-cols-[160px_auto]">
-                    @csrf
-                    <div>
-                        <x-input-label for="table_count" value="Number of tables" required />
-                        <input id="table_count" name="table_count" type="number" min="1" max="200" value="{{ old('table_count', $tableCount ?: 12) }}" class="mt-1 w-full rounded-md border-stone-300 text-sm" required>
-                        <x-input-error :messages="$errors->get('table_count')" class="mt-2" />
-                    </div>
-                    <button class="mt-6 inline-flex items-center justify-center gap-2 rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white app-focus hover:bg-red-800">
-                        <x-icon name="qr-code" class="h-4 w-4" />
-                        Generate
-                    </button>
-                </form>
+                <button type="button" x-data="" x-on:click.prevent="$dispatch('open-modal', 'add-table-qr')" class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-800 app-focus">
+                    <x-icon name="qr-code" class="h-4 w-4" />
+                    {{ __('Add table QR') }}
+                </button>
             </div>
 
             <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 @forelse ($tables as $table)
-                    <article class="rounded-lg border border-stone-200 p-4">
-                        <div class="flex items-start gap-4">
-                            <img src="{{ route('tenant.admin.tables.qr', [tenant('id'), $table]) }}" alt="{{ $table->code }} QR code" class="h-24 w-24 rounded-md border border-stone-200 bg-white p-1">
-                            <div class="min-w-0">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-stone-500">Table ID</p>
-                                <p class="mt-1 text-2xl font-bold">{{ $table->code }}</p>
-                                <p class="mt-2 break-all text-xs text-stone-500">{{ $table->qr_token }}</p>
+                    <article class="relative overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 p-4 transition hover:border-brand-300 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-brand-800">
+                        <div class="absolute inset-x-0 top-0 h-1 bg-brand-500"></div>
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ __('Table ID') }}</p>
+                                <p class="mt-1 text-2xl font-bold text-zinc-950 dark:text-white">{{ $table->code }}</p>
                             </div>
+                            <span class="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-brand-700 shadow-sm dark:bg-zinc-900 dark:text-brand-200">{{ __('Active') }}</span>
                         </div>
+
+                        <div class="mt-4 grid place-items-center rounded-lg border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800">
+                            <img src="{{ route('tenant.admin.tables.qr', [tenant('id'), $table]) }}" alt="{{ __(':table QR code', ['table' => $table->code]) }}" class="h-32 w-32">
+                        </div>
+
+                        <p class="mt-3 break-all rounded-md bg-white px-2 py-1.5 font-mono text-[11px] text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">{{ $table->qr_token }}</p>
+                        <a href="{{ route('tenant.admin.tables.qr', [tenant('id'), $table]) }}" target="_blank" class="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-100 app-focus dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800">
+                            <x-icon name="external-link" class="h-4 w-4" />
+                            {{ __('Open QR') }}
+                        </a>
                     </article>
                 @empty
-                    <div class="rounded-lg border border-stone-200 p-5 text-sm text-stone-600 sm:col-span-2 lg:col-span-4">No active tables yet.</div>
+                    <div class="rounded-lg border border-dashed border-zinc-300 p-6 text-sm text-zinc-600 dark:border-zinc-700 dark:text-zinc-300 sm:col-span-2 lg:col-span-4">
+                        {{ __('No active tables yet. Add the first table QR to start dine-in ordering.') }}
+                    </div>
                 @endforelse
             </div>
         </section>
 
-        <section class="mt-8 rounded-lg border border-stone-200 bg-white p-5">
-            <h2 class="text-lg font-semibold">Dispatch and order control</h2>
+        <x-modal name="add-table-qr" :show="$modalToShow === 'add-table-qr'" maxWidth="md" focusable>
+            <form method="POST" action="{{ route('tenant.admin.tables.store', tenant('id')) }}" class="p-6">
+                @csrf
+                <input type="hidden" name="_modal" value="add-table-qr">
+                <h3 class="text-lg font-semibold text-zinc-950 dark:text-white">{{ __('Add table QR code') }}</h3>
+                <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-300">{{ __('Add one table at a time. Existing QR tokens stay stable.') }}</p>
+                <div class="mt-5">
+                    <x-input-label for="table_code" value="{{ __('Table code') }}" />
+                    <x-text-input id="table_code" name="code" type="text" maxlength="20" value="{{ old('code') }}" placeholder="{{ __('Leave empty for the next code') }}" class="mt-1 block w-full" />
+                    <x-input-error :messages="$errors->get('code')" class="mt-2" />
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <x-secondary-button x-on:click="$dispatch('close')">{{ __('Cancel') }}</x-secondary-button>
+                    <x-primary-button class="gap-2">
+                        <x-icon name="qr-code" class="h-4 w-4" />
+                        {{ __('Add QR code') }}
+                    </x-primary-button>
+                </div>
+            </form>
+        </x-modal>
+
+        <section class="mt-8 rounded-lg border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+            <div class="flex flex-col gap-1">
+                <p class="text-sm font-semibold uppercase tracking-wide text-brand-700 dark:text-brand-300">Orders</p>
+                <h2 class="text-lg font-semibold">Dispatch and order control</h2>
+            </div>
             <div class="mt-4 overflow-x-auto">
-                <table class="min-w-full divide-y divide-stone-200 text-sm">
+                <table class="min-w-full divide-y divide-zinc-200 text-sm dark:divide-zinc-800">
                     <thead>
-                        <tr class="text-left text-stone-600"><th class="py-2">Order</th><th>Type</th><th>Status</th><th>Total</th><th>Driver</th><th class="text-right">Action</th></tr>
+                        <tr class="text-left text-zinc-600 dark:text-zinc-300">
+                            <th class="py-2">Order</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Total</th>
+                            <th>Driver</th>
+                            <th class="text-right">Action</th>
+                        </tr>
                     </thead>
-                    <tbody class="divide-y divide-stone-100">
-                        @foreach ($orders as $order)
+                    <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
+                        @forelse ($orders as $order)
                             <tr>
                                 <td class="py-3">
-                                    <a href="{{ route('tenant.orders.show', [tenant('id'), $order]) }}" class="font-semibold hover:underline">{{ $order->public_code }}</a>
-                                    <p class="text-stone-600">{{ $order->customer_name }}</p>
+                                    <a href="{{ route('tenant.orders.show', [tenant('id'), $order]) }}" class="font-semibold text-zinc-950 hover:text-brand-700 app-focus dark:text-white dark:hover:text-brand-300">{{ $order->public_code }}</a>
+                                    <p class="text-zinc-600 dark:text-zinc-300">{{ $order->customer_name }}</p>
                                 </td>
                                 <td>
                                     {{ $order->typeLabel() }}
                                     @if ($order->type === 'local' && $order->restaurantTable)
-                                        <p class="text-xs text-stone-500">{{ $order->restaurantTable->code }}</p>
+                                        <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ $order->restaurantTable->code }}</p>
                                     @endif
                                 </td>
-                                <td><span class="rounded-full bg-stone-100 px-3 py-1 text-xs font-semibold">{{ App\Models\Order::STATUS_FLOW[$order->status] ?? ucfirst($order->status) }}</span></td>
+                                <td><span class="rounded-full bg-zinc-100 px-3 py-1 text-xs font-semibold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">{{ __(App\Models\Order::STATUS_FLOW[$order->status] ?? ucfirst($order->status)) }}</span></td>
                                 <td>{{ $order->formattedTotal() }}</td>
                                 <td>{{ $order->driver?->name ?? 'Unassigned' }}</td>
                                 <td class="text-right">
                                     @if ($order->type === 'delivery' && in_array($order->status, ['ready', 'assigned'], true))
-                                        <form method="POST" action="{{ route('tenant.admin.orders.assign', [tenant('id'), $order]) }}" class="inline-flex gap-2">
-                                            @csrf
-                                            <select name="driver_id" class="rounded-md border-stone-300 text-xs">
-                                                @foreach ($drivers as $driver)
-                                                    <option value="{{ $driver->id }}">{{ $driver->name }}</option>
-                                                @endforeach
-                                            </select>
-                                            <button class="rounded-lg bg-red-700 px-3 py-2 text-xs font-semibold text-white">Assign</button>
-                                        </form>
+                                        <button type="button" x-data="" x-on:click.prevent="$dispatch('open-modal', 'assign-order-{{ $order->id }}')" class="rounded-lg bg-brand-700 px-3 py-2 text-xs font-semibold text-white hover:bg-brand-800 app-focus">Assign</button>
+                                    @else
+                                        <span class="text-xs text-zinc-500 dark:text-zinc-400">No action</span>
                                     @endif
                                 </td>
                             </tr>
-                        @endforeach
+                        @empty
+                            <tr>
+                                <td colspan="6" class="py-6 text-sm text-zinc-600 dark:text-zinc-300">No orders yet.</td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
         </section>
 
+        @foreach ($orders as $order)
+            @if ($order->type === 'delivery' && in_array($order->status, ['ready', 'assigned'], true))
+                <x-modal name="assign-order-{{ $order->id }}" maxWidth="md" focusable>
+                    <form method="POST" action="{{ route('tenant.admin.orders.assign', [tenant('id'), $order]) }}" class="p-6">
+                        @csrf
+                        <h3 class="text-lg font-semibold text-zinc-950 dark:text-white">Assign {{ $order->public_code }}</h3>
+                        <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-300">Choose the driver who should take this delivery.</p>
+                        <label class="mt-5 grid gap-1 text-sm font-semibold text-zinc-700 dark:text-zinc-200">
+                            Driver
+                            <select name="driver_id" class="rounded-md border-zinc-300 text-sm dark:border-zinc-700" required>
+                                @foreach ($drivers as $driver)
+                                    <option value="{{ $driver->id }}" @selected($order->driver_id === $driver->id)>{{ $driver->name }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <div class="mt-6 flex justify-end gap-3">
+                            <x-secondary-button x-on:click="$dispatch('close')">Cancel</x-secondary-button>
+                            <x-primary-button>Assign driver</x-primary-button>
+                        </div>
+                    </form>
+                </x-modal>
+            @endif
+        @endforeach
+
         <section class="mt-8 grid gap-6 xl:grid-cols-2">
-            <div class="rounded-lg border border-stone-200 bg-white p-5">
-                <h2 class="text-lg font-semibold">Menu management</h2>
-                <form method="POST" action="{{ route('tenant.admin.categories.store', tenant('id')) }}" class="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]">
-                    @csrf
-                    <input name="name" placeholder="New category" class="rounded-md border-stone-300 text-sm" required>
-                    <button class="rounded-lg bg-stone-900 px-4 py-2 text-sm font-semibold text-white">Add category</button>
-                </form>
-
-                <form method="POST" action="{{ route('tenant.admin.menu-items.store', tenant('id')) }}" class="mt-5 grid gap-3">
-                    @csrf
-                    <div class="grid gap-3 sm:grid-cols-2">
-                        <select name="category_id" class="rounded-md border-stone-300 text-sm" required>
-                            @foreach ($categories as $category)
-                                <option value="{{ $category->id }}">{{ $category->name }}</option>
-                            @endforeach
-                        </select>
-                        <input name="name" placeholder="Dish name" class="rounded-md border-stone-300 text-sm" required>
+            <div class="rounded-lg border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <p class="text-sm font-semibold uppercase tracking-wide text-brand-700 dark:text-brand-300">Menu</p>
+                        <h2 class="text-lg font-semibold">Menu management</h2>
                     </div>
-                    <textarea name="description" rows="2" placeholder="Description" class="rounded-md border-stone-300 text-sm"></textarea>
-                    <div class="grid gap-3 sm:grid-cols-3">
-                        <input name="price" type="number" step="0.01" min="0.5" placeholder="Price" class="rounded-md border-stone-300 text-sm" required>
-                        <input name="prep_minutes" type="number" min="1" value="12" class="rounded-md border-stone-300 text-sm" required>
-                        <label class="flex items-center gap-2 rounded-md border border-stone-300 px-3 text-sm"><input name="is_active" value="1" type="checkbox" checked> Active</label>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" x-data="" x-on:click.prevent="$dispatch('open-modal', 'create-category')" class="rounded-lg border border-zinc-300 px-3 py-2 text-sm font-semibold hover:bg-zinc-100 app-focus dark:border-zinc-700 dark:hover:bg-zinc-800">Add category</button>
+                        <button type="button" x-data="" x-on:click.prevent="$dispatch('open-modal', 'create-dish')" class="rounded-lg bg-brand-700 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-800 app-focus">Create dish</button>
                     </div>
-                    <button class="w-fit rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white">Create dish</button>
-                </form>
+                </div>
 
-                <div class="mt-5 divide-y divide-stone-100">
+                <div class="mt-5 divide-y divide-zinc-100 dark:divide-zinc-800">
                     @foreach ($categories as $category)
-                        <div class="py-3">
-                            <p class="font-semibold">{{ $category->name }}</p>
-                            <p class="text-sm text-stone-600">{{ $category->menuItems->count() }} items</p>
+                        <div class="flex items-center justify-between gap-4 py-3">
+                            <div>
+                                <p class="font-semibold">{{ $category->name }}</p>
+                                <p class="text-sm text-zinc-600 dark:text-zinc-300">{{ $category->description ?: 'No description yet.' }}</p>
+                            </div>
+                            <span class="rounded-full bg-zinc-100 px-3 py-1 text-xs font-semibold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">{{ $category->menuItems->count() }} items</span>
                         </div>
                     @endforeach
                 </div>
             </div>
 
-            <div class="rounded-lg border border-stone-200 bg-white p-5">
-                <h2 class="text-lg font-semibold">Stock management</h2>
-                <form method="POST" action="{{ route('tenant.admin.stock.adjust', tenant('id')) }}" class="mt-4 grid gap-3">
-                    @csrf
-                    <select name="ingredient_id" class="rounded-md border-stone-300 text-sm" required>
-                        @foreach ($ingredients as $ingredient)
-                            <option value="{{ $ingredient->id }}">{{ $ingredient->name }} ({{ $ingredient->current_stock }} {{ $ingredient->unit }})</option>
-                        @endforeach
-                    </select>
-                    <div class="grid gap-3 sm:grid-cols-[160px_1fr]">
-                        <input name="quantity" type="number" step="0.01" placeholder="+10 or -2" class="rounded-md border-stone-300 text-sm" required>
-                        <input name="note" placeholder="Reason" class="rounded-md border-stone-300 text-sm">
+            <div class="rounded-lg border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <p class="text-sm font-semibold uppercase tracking-wide text-brand-700 dark:text-brand-300">Inventory</p>
+                        <h2 class="text-lg font-semibold">Stock management</h2>
                     </div>
-                    <button class="w-fit rounded-lg bg-stone-900 px-4 py-2 text-sm font-semibold text-white">Adjust stock</button>
-                </form>
+                    <button type="button" x-data="" x-on:click.prevent="$dispatch('open-modal', 'adjust-stock')" class="rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white hover:bg-zinc-800 app-focus dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white">Adjust stock</button>
+                </div>
 
-                <div class="mt-5 divide-y divide-stone-100">
+                <div class="mt-5 divide-y divide-zinc-100 dark:divide-zinc-800">
                     @foreach ($ingredients as $ingredient)
                         <div class="flex items-center justify-between gap-4 py-3">
                             <div>
                                 <p class="font-semibold">{{ $ingredient->name }}</p>
-                                <p class="text-sm text-stone-600">Low at {{ $ingredient->low_stock_threshold }} {{ $ingredient->unit }}</p>
+                                <p class="text-sm text-zinc-600 dark:text-zinc-300">Low at {{ $ingredient->low_stock_threshold }} {{ $ingredient->unit }}</p>
                             </div>
-                            <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $ingredient->isLow() ? 'bg-amber-100 text-amber-800' : 'bg-stone-100 text-stone-700' }}">{{ $ingredient->current_stock }} {{ $ingredient->unit }}</span>
+                            <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $ingredient->isLow() ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200' : 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200' }}">{{ $ingredient->current_stock }} {{ $ingredient->unit }}</span>
                         </div>
                     @endforeach
                 </div>
             </div>
         </section>
 
-        <section class="mt-8 rounded-lg border border-stone-200 bg-white p-5">
-            <h2 class="text-lg font-semibold">Staff and roles</h2>
-            <form method="POST" action="{{ route('tenant.admin.staff.store', tenant('id')) }}" class="mt-4 grid gap-3 lg:grid-cols-6">
+        <x-modal name="create-category" :show="$modalToShow === 'create-category'" maxWidth="lg" focusable>
+            <form method="POST" action="{{ route('tenant.admin.categories.store', tenant('id')) }}" class="p-6">
                 @csrf
-                <input name="name" placeholder="Name" class="rounded-md border-stone-300 text-sm" required>
-                <input name="email" type="email" placeholder="Email" class="rounded-md border-stone-300 text-sm" required>
-                <input name="phone" placeholder="Phone" class="rounded-md border-stone-300 text-sm">
-                <select name="role" class="rounded-md border-stone-300 text-sm">
-                    <option value="kitchen">Cuisine</option>
-                    <option value="driver">Livreur</option>
-                    <option value="admin">Admin</option>
-                </select>
-                <input name="password" type="password" placeholder="Password" class="rounded-md border-stone-300 text-sm" required>
-                <input name="password_confirmation" type="password" placeholder="Confirm" class="rounded-md border-stone-300 text-sm" required>
-                <button class="w-fit rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white lg:col-span-6">Create staff account</button>
+                <input type="hidden" name="_modal" value="create-category">
+                <h3 class="text-lg font-semibold text-zinc-950 dark:text-white">Add category</h3>
+                <div class="mt-5 grid gap-4">
+                    <div>
+                        <x-input-label for="category_name" value="Category name" required />
+                        <x-text-input id="category_name" name="name" value="{{ old('name') }}" class="mt-1 block w-full" required />
+                        <x-input-error :messages="$errors->get('name')" class="mt-2" />
+                    </div>
+                    <div>
+                        <x-input-label for="category_description" value="Description" />
+                        <textarea id="category_description" name="description" rows="3" class="mt-1 block w-full rounded-md border-zinc-300 text-sm">{{ old('description') }}</textarea>
+                        <x-input-error :messages="$errors->get('description')" class="mt-2" />
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <x-secondary-button x-on:click="$dispatch('close')">Cancel</x-secondary-button>
+                    <x-primary-button>Add category</x-primary-button>
+                </div>
             </form>
+        </x-modal>
+
+        <x-modal name="create-dish" :show="$modalToShow === 'create-dish'" maxWidth="lg" focusable>
+            <form method="POST" action="{{ route('tenant.admin.menu-items.store', tenant('id')) }}" class="p-6">
+                @csrf
+                <input type="hidden" name="_modal" value="create-dish">
+                <h3 class="text-lg font-semibold text-zinc-950 dark:text-white">Create dish</h3>
+                <div class="mt-5 grid gap-4">
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div>
+                            <x-input-label for="dish_category_id" value="Category" required />
+                            <select id="dish_category_id" name="category_id" class="mt-1 block w-full rounded-md border-zinc-300 text-sm" required>
+                                @foreach ($categories as $category)
+                                    <option value="{{ $category->id }}" @selected((int) old('category_id') === $category->id)>{{ $category->name }}</option>
+                                @endforeach
+                            </select>
+                            <x-input-error :messages="$errors->get('category_id')" class="mt-2" />
+                        </div>
+                        <div>
+                            <x-input-label for="dish_name" value="Dish name" required />
+                            <x-text-input id="dish_name" name="name" value="{{ old('name') }}" class="mt-1 block w-full" required />
+                            <x-input-error :messages="$errors->get('name')" class="mt-2" />
+                        </div>
+                    </div>
+                    <div>
+                        <x-input-label for="dish_description" value="Description" />
+                        <textarea id="dish_description" name="description" rows="3" class="mt-1 block w-full rounded-md border-zinc-300 text-sm">{{ old('description') }}</textarea>
+                        <x-input-error :messages="$errors->get('description')" class="mt-2" />
+                    </div>
+                    <div class="grid gap-4 sm:grid-cols-3">
+                        <div>
+                            <x-input-label for="dish_price" value="Price (MAD)" required />
+                            <x-text-input id="dish_price" name="price" type="number" step="0.01" min="0.5" value="{{ old('price') }}" class="mt-1 block w-full" required />
+                            <x-input-error :messages="$errors->get('price')" class="mt-2" />
+                        </div>
+                        <div>
+                            <x-input-label for="dish_prep_minutes" value="Prep minutes" required />
+                            <x-text-input id="dish_prep_minutes" name="prep_minutes" type="number" min="1" value="{{ old('prep_minutes', 12) }}" class="mt-1 block w-full" required />
+                            <x-input-error :messages="$errors->get('prep_minutes')" class="mt-2" />
+                        </div>
+                        <label class="mt-6 flex items-center gap-2 rounded-md border border-zinc-300 px-3 text-sm dark:border-zinc-700">
+                            <input name="is_active" value="1" type="checkbox" class="rounded border-zinc-300 text-brand-700 focus:ring-brand-500" @checked(old('is_active', true))>
+                            Active
+                        </label>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <x-secondary-button x-on:click="$dispatch('close')">Cancel</x-secondary-button>
+                    <x-primary-button>Create dish</x-primary-button>
+                </div>
+            </form>
+        </x-modal>
+
+        <x-modal name="adjust-stock" :show="$modalToShow === 'adjust-stock'" maxWidth="lg" focusable>
+            <form method="POST" action="{{ route('tenant.admin.stock.adjust', tenant('id')) }}" class="p-6">
+                @csrf
+                <input type="hidden" name="_modal" value="adjust-stock">
+                <h3 class="text-lg font-semibold text-zinc-950 dark:text-white">Adjust stock</h3>
+                <div class="mt-5 grid gap-4">
+                    <div>
+                        <x-input-label for="stock_ingredient_id" value="Ingredient" required />
+                        <select id="stock_ingredient_id" name="ingredient_id" class="mt-1 block w-full rounded-md border-zinc-300 text-sm" required>
+                            @foreach ($ingredients as $ingredient)
+                                <option value="{{ $ingredient->id }}" @selected((int) old('ingredient_id') === $ingredient->id)>{{ $ingredient->name }} ({{ $ingredient->current_stock }} {{ $ingredient->unit }})</option>
+                            @endforeach
+                        </select>
+                        <x-input-error :messages="$errors->get('ingredient_id')" class="mt-2" />
+                    </div>
+                    <div class="grid gap-4 sm:grid-cols-[160px_1fr]">
+                        <div>
+                            <x-input-label for="stock_quantity" value="Quantity" required />
+                            <x-text-input id="stock_quantity" name="quantity" type="number" step="0.01" value="{{ old('quantity') }}" placeholder="+10 or -2" class="mt-1 block w-full" required />
+                            <x-input-error :messages="$errors->get('quantity')" class="mt-2" />
+                        </div>
+                        <div>
+                            <x-input-label for="stock_note" value="Reason" />
+                            <x-text-input id="stock_note" name="note" value="{{ old('note') }}" class="mt-1 block w-full" />
+                            <x-input-error :messages="$errors->get('note')" class="mt-2" />
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <x-secondary-button x-on:click="$dispatch('close')">Cancel</x-secondary-button>
+                    <x-primary-button>Adjust stock</x-primary-button>
+                </div>
+            </form>
+        </x-modal>
+
+        <section class="mt-8 rounded-lg border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                    <p class="text-sm font-semibold uppercase tracking-wide text-brand-700 dark:text-brand-300">Team</p>
+                    <h2 class="text-lg font-semibold">Staff and roles</h2>
+                </div>
+                <button type="button" x-data="" x-on:click.prevent="$dispatch('open-modal', 'create-staff')" class="rounded-lg bg-brand-700 px-3 py-2 text-sm font-semibold text-white hover:bg-brand-800 app-focus">Create staff account</button>
+            </div>
 
             <div class="mt-5 grid gap-3 md:grid-cols-3">
-                @foreach ($staff as $member)
-                    <div class="rounded-lg border border-stone-200 p-4">
+                @forelse ($staff as $member)
+                    <article class="rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
                         <p class="font-semibold">{{ $member->name }}</p>
-                        <p class="text-sm text-stone-600">{{ $member->email }}</p>
-                        <span class="mt-3 inline-flex rounded-full bg-stone-100 px-3 py-1 text-xs font-semibold">{{ ucfirst($member->role) }}</span>
-                    </div>
-                @endforeach
+                        <p class="text-sm text-zinc-600 dark:text-zinc-300">{{ $member->email }}</p>
+                        <span class="mt-3 inline-flex rounded-full bg-zinc-100 px-3 py-1 text-xs font-semibold text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">{{ ucfirst($member->role) }}</span>
+                    </article>
+                @empty
+                    <div class="rounded-lg border border-dashed border-zinc-300 p-5 text-sm text-zinc-600 dark:border-zinc-700 dark:text-zinc-300 md:col-span-3">No staff accounts yet.</div>
+                @endforelse
             </div>
         </section>
+
+        <x-modal name="create-staff" :show="$modalToShow === 'create-staff'" maxWidth="xl" focusable>
+            <form method="POST" action="{{ route('tenant.admin.staff.store', tenant('id')) }}" class="p-6">
+                @csrf
+                <input type="hidden" name="_modal" value="create-staff">
+                <h3 class="text-lg font-semibold text-zinc-950 dark:text-white">Create staff account</h3>
+                <div class="mt-5 grid gap-4 sm:grid-cols-2">
+                    <div>
+                        <x-input-label for="staff_name" value="Name" required />
+                        <x-text-input id="staff_name" name="name" value="{{ old('name') }}" class="mt-1 block w-full" required />
+                        <x-input-error :messages="$errors->get('name')" class="mt-2" />
+                    </div>
+                    <div>
+                        <x-input-label for="staff_email" value="Email" required />
+                        <x-text-input id="staff_email" name="email" type="email" value="{{ old('email') }}" class="mt-1 block w-full" required />
+                        <x-input-error :messages="$errors->get('email')" class="mt-2" />
+                    </div>
+                    <div>
+                        <x-input-label for="staff_phone" value="Phone" />
+                        <x-text-input id="staff_phone" name="phone" value="{{ old('phone') }}" class="mt-1 block w-full" />
+                        <x-input-error :messages="$errors->get('phone')" class="mt-2" />
+                    </div>
+                    <div>
+                        <x-input-label for="staff_role" value="Role" required />
+                        <select id="staff_role" name="role" class="mt-1 block w-full rounded-md border-zinc-300 text-sm">
+                            <option value="kitchen" @selected(old('role') === 'kitchen')>Cuisine</option>
+                            <option value="driver" @selected(old('role') === 'driver')>Livreur</option>
+                            <option value="admin" @selected(old('role') === 'admin')>Admin</option>
+                        </select>
+                        <x-input-error :messages="$errors->get('role')" class="mt-2" />
+                    </div>
+                    <div>
+                        <x-input-label for="staff_password" value="Password" required />
+                        <x-text-input id="staff_password" name="password" type="password" class="mt-1 block w-full" required />
+                        <x-input-error :messages="$errors->get('password')" class="mt-2" />
+                    </div>
+                    <div>
+                        <x-input-label for="staff_password_confirmation" value="Confirm password" required />
+                        <x-text-input id="staff_password_confirmation" name="password_confirmation" type="password" class="mt-1 block w-full" required />
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <x-secondary-button x-on:click="$dispatch('close')">Cancel</x-secondary-button>
+                    <x-primary-button>Create staff account</x-primary-button>
+                </div>
+            </form>
+        </x-modal>
     </div>
 </x-app-layout>

@@ -1,5 +1,6 @@
-<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" {{ $attributes }}>
-    <rect width="48" height="48" rx="10" fill="currentColor" opacity=".12"/>
-    <path d="M14 33V15h9.2c4 0 6.8 2.4 6.8 6 0 2.4-1.2 4.2-3.2 5.1L32 33h-5.4l-4.3-6h-3.5v6H14Zm4.8-10h4c1.5 0 2.5-.8 2.5-2s-1-2-2.5-2h-4v4Z" fill="currentColor"/>
-    <path d="M32.8 33c-2.2 0-4.1-.6-5.6-1.7l1.7-3.3c1.3.9 2.6 1.3 4 1.3 1.2 0 1.9-.4 1.9-1.1 0-.8-.7-1.1-2.7-1.6-3-.8-4.5-2-4.5-4.4 0-2.7 2.2-4.5 5.5-4.5 1.9 0 3.5.5 4.8 1.4l-1.7 3.2c-.9-.6-2-.9-3.1-.9-1 0-1.6.4-1.6 1 0 .7.7 1 2.6 1.5 3.2.9 4.7 2.1 4.7 4.6 0 2.7-2.3 4.5-6 4.5Z" fill="currentColor"/>
-</svg>
+@props(['alt' => config('app.name', 'RestoSmart')])
+
+<span {{ $attributes->merge(['class' => 'inline-flex overflow-hidden rounded-lg']) }}>
+    <img src="{{ asset('images/logo-light.png') }}" alt="{{ $alt }}" class="h-full w-full object-cover dark:hidden">
+    <img src="{{ asset('images/logo-dark.png') }}" alt="{{ $alt }}" class="hidden h-full w-full object-cover dark:block">
+</span>

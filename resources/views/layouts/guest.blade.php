@@ -2,6 +2,13 @@
     $isRtl = app()->getLocale() === 'ar';
     $tenantId = function_exists('tenant') ? tenant('id') : null;
     $workspaceName = $tenantId ? tenant('name') : config('app.name', 'RestoSmart');
+    $routeTitle = match (true) {
+        request()->routeIs('tenant.login', 'login') => __('Log in'),
+        request()->routeIs('tenant.register', 'register') => __('Register'),
+        request()->routeIs('password.*') => __('Password'),
+        default => null,
+    };
+    $browserTitle = $routeTitle ? $routeTitle.' · '.$workspaceName : $workspaceName;
 @endphp
 
 <!DOCTYPE html>
@@ -11,13 +18,14 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ $workspaceName }}</title>
+        <title>{{ $browserTitle }}</title>
+        <link rel="icon" type="image/png" href="{{ asset('images/logo-light.png') }}">
+        <link rel="apple-touch-icon" href="{{ asset('images/logo-light.png') }}">
 
         <script>
             const storedTheme = localStorage.getItem('restosmart-theme');
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-            document.documentElement.classList.toggle('dark', storedTheme ? storedTheme === 'dark' : prefersDark);
+            document.documentElement.classList.toggle('dark', storedTheme === 'dark');
         </script>
 
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -29,7 +37,7 @@
         <div class="min-h-screen bg-zinc-50 px-4 py-6 dark:bg-zinc-950">
             <div class="mx-auto flex w-full max-w-5xl items-center justify-between gap-4">
                 <a href="{{ $tenantId ? route('tenant.menu', $tenantId) : route('home') }}" class="flex items-center gap-3">
-                    <x-application-logo class="h-10 w-10 text-red-700 dark:text-red-400" />
+                    <x-application-logo class="h-10 w-10 text-brand-700 dark:text-brand-400" />
                     <span class="font-semibold">{{ $workspaceName }}</span>
                 </a>
 

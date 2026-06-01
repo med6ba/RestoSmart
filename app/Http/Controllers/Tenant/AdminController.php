@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Tenant;
 
+use App\Events\TenantRoleUpdated;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\InviteStaffRequest;
 use App\Http\Requests\StockAdjustmentRequest;
@@ -19,11 +20,11 @@ use App\Support\QrCodeSvg;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Throwable;
 
 class AdminController extends Controller
 {
@@ -47,49 +48,31 @@ class AdminController extends Controller
         ]);
     }
 
-    public function configureTables(Request $request): RedirectResponse
+    public function storeTable(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'table_count' => ['required', 'integer', 'min:1', 'max:200'],
+            'code' => [
+                'nullable',
+                'string',
+                'max:20',
+                Rule::unique('restaurant_tables', 'code')->where('tenant_id', tenant('id')),
+            ],
         ]);
 
-        $targetCount = (int) $data['table_count'];
+        $code = Str::upper(trim($data['code'] ?? '')) ?: $this->nextTableCode();
 
-        DB::transaction(function () use ($targetCount): void {
-            $tables = RestaurantTable::query()
-                ->orderBy('sort_order')
-                ->orderBy('id')
-                ->get();
+        $table = RestaurantTable::query()->create([
+            'code' => $code,
+            'qr_token' => $this->uniqueTableToken(),
+            'sort_order' => (int) RestaurantTable::query()->max('sort_order') + 1,
+            'is_active' => true,
+        ]);
 
-            $nextNumber = $tables
-                ->map(fn (RestaurantTable $table) => (int) preg_replace('/\D+/', '', $table->code))
-                ->max() + 1;
+        $this->broadcastTenantUpdate(['admin', 'client'], 'tables', 'table.added', __('Table QR :code added.', ['code' => $table->code]), [
+            'table' => ['id' => $table->id, 'code' => $table->code],
+        ]);
 
-            while ($tables->count() < $targetCount) {
-                $tables->push(RestaurantTable::query()->create([
-                    'code' => sprintf('T%03d', $nextNumber),
-                    'qr_token' => $this->uniqueTableToken(),
-                    'sort_order' => $tables->count() + 1,
-                    'is_active' => true,
-                ]));
-
-                $nextNumber++;
-            }
-
-            $tables = RestaurantTable::query()
-                ->orderBy('sort_order')
-                ->orderBy('id')
-                ->get();
-
-            foreach ($tables as $index => $table) {
-                $table->update([
-                    'sort_order' => $index + 1,
-                    'is_active' => $index < $targetCount,
-                ]);
-            }
-        });
-
-        return back()->with('status', 'Restaurant tables updated.');
+        return back()->with('status', __('Table QR added.'));
     }
 
     public function tableQr(RestaurantTable $restaurantTable): Response
@@ -107,11 +90,15 @@ class AdminController extends Controller
             'description' => ['nullable', 'string', 'max:400'],
         ]);
 
-        Category::query()->create([
+        $category = Category::query()->create([
             'name' => $data['name'],
             'slug' => Str::slug($data['name']).'-'.Str::lower(Str::random(4)),
             'description' => $data['description'] ?? null,
             'sort_order' => Category::query()->max('sort_order') + 1,
+        ]);
+
+        $this->broadcastTenantUpdate(['admin', 'client'], 'menu', 'category.created', __('Menu category :name created.', ['name' => $category->name]), [
+            'category' => ['id' => $category->id, 'name' => $category->name],
         ]);
 
         return back()->with('status', 'Category created.');
@@ -121,13 +108,17 @@ class AdminController extends Controller
     {
         $data = $request->validated();
 
-        MenuItem::query()->create([
+        $menuItem = MenuItem::query()->create([
             'category_id' => $data['category_id'],
             'name' => $data['name'],
             'description' => $data['description'] ?? null,
             'price_cents' => (int) round($data['price'] * 100),
             'prep_minutes' => $data['prep_minutes'],
             'is_active' => $request->boolean('is_active'),
+        ]);
+
+        $this->broadcastTenantUpdate(['admin', 'client', 'kitchen'], 'menu', 'dish.created', __('Dish :name created.', ['name' => $menuItem->name]), [
+            'dish' => ['id' => $menuItem->id, 'name' => $menuItem->name],
         ]);
 
         return back()->with('status', 'Menu item created.');
@@ -147,12 +138,16 @@ class AdminController extends Controller
             'note' => $request->input('note') ?: 'Manual stock adjustment',
         ]);
 
+        $this->broadcastTenantUpdate(['admin', 'kitchen'], 'stock', 'stock.adjusted', __('Stock adjusted for :name.', ['name' => $ingredient->name]), [
+            'ingredient' => ['id' => $ingredient->id, 'name' => $ingredient->name],
+        ]);
+
         return back()->with('status', 'Stock adjusted.');
     }
 
     public function inviteStaff(InviteStaffRequest $request): RedirectResponse
     {
-        User::query()->create([
+        $staff = User::query()->create([
             'name' => $request->input('name'),
             'email' => $request->input('email'),
             'phone' => $request->input('phone'),
@@ -160,6 +155,10 @@ class AdminController extends Controller
             'status' => 'active',
             'available' => $request->input('role') === 'driver',
             'password' => Hash::make($request->input('password')),
+        ]);
+
+        $this->broadcastTenantUpdate(['admin'], 'staff', 'staff.created', __('Staff account :name created.', ['name' => $staff->name]), [
+            'staff' => ['id' => $staff->id, 'name' => $staff->name, 'role' => $staff->role],
         ]);
 
         return back()->with('status', 'Staff account created.');
@@ -186,5 +185,32 @@ class AdminController extends Controller
         } while (RestaurantTable::query()->withoutGlobalScopes()->where('qr_token', $token)->exists());
 
         return $token;
+    }
+
+    private function nextTableCode(): string
+    {
+        $nextNumber = (int) RestaurantTable::query()
+            ->pluck('code')
+            ->map(fn (string $code): int => (int) preg_replace('/\D+/', '', $code))
+            ->max() + 1;
+
+        do {
+            $code = sprintf('T%03d', $nextNumber++);
+        } while (RestaurantTable::query()->where('code', $code)->exists());
+
+        return $code;
+    }
+
+    /**
+     * @param  array<int, string>  $roles
+     * @param  array<string, mixed>  $payload
+     */
+    private function broadcastTenantUpdate(array $roles, string $area, string $type, string $message, array $payload = []): void
+    {
+        try {
+            TenantRoleUpdated::dispatch((string) tenant('id'), $roles, $area, $type, ['message' => $message] + $payload);
+        } catch (Throwable $exception) {
+            report($exception);
+        }
     }
 }

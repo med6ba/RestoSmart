@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToTenant;
+use App\Support\Money;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -40,6 +41,6 @@ class MenuItem extends Model
 
     public function formattedPrice(): string
     {
-        return '$'.number_format($this->price_cents / 100, 2);
+        return Money::mad($this->price_cents);
     }
 }

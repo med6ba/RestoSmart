@@ -124,6 +124,15 @@
             <circle cx="12" cy="10" r="2.5" />
             @break
 
+        @case('grip-vertical')
+            <circle cx="9" cy="6" r="1" />
+            <circle cx="15" cy="6" r="1" />
+            <circle cx="9" cy="12" r="1" />
+            <circle cx="15" cy="12" r="1" />
+            <circle cx="9" cy="18" r="1" />
+            <circle cx="15" cy="18" r="1" />
+            @break
+
         @case('menu')
             <path d="M4 7h16" />
             <path d="M4 12h16" />
@@ -139,6 +148,18 @@
 
         @case('play')
             <path d="M6 4v16l14-8-14-8Z" />
+            @break
+
+        @case('panel-left-close')
+            <rect x="3" y="4" width="18" height="16" rx="2" />
+            <path d="M9 4v16" />
+            <path d="m16 10-2 2 2 2" />
+            @break
+
+        @case('panel-left-open')
+            <rect x="3" y="4" width="18" height="16" rx="2" />
+            <path d="M9 4v16" />
+            <path d="m14 10 2 2-2 2" />
             @break
 
         @case('plus')

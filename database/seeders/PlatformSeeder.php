@@ -23,7 +23,7 @@ class PlatformSeeder extends Seeder
             ['slug' => 'starter'],
             [
                 'name' => 'Starter',
-                'monthly_price_cents' => 2900,
+                'monthly_price_cents' => 29000,
                 'max_staff' => 5,
                 'max_active_orders' => 30,
                 'features' => ['Online menu', 'Takeaway checkout', 'Basic kitchen screen', '30-day trial'],
@@ -35,7 +35,7 @@ class PlatformSeeder extends Seeder
             ['slug' => 'pro'],
             [
                 'name' => 'Pro',
-                'monthly_price_cents' => 7900,
+                'monthly_price_cents' => 79000,
                 'max_staff' => 15,
                 'max_active_orders' => 120,
                 'features' => ['Delivery dispatch', 'Stock alerts', 'Driver mobile PWA', 'Advanced analytics'],
@@ -47,7 +47,7 @@ class PlatformSeeder extends Seeder
             ['slug' => 'business'],
             [
                 'name' => 'Business',
-                'monthly_price_cents' => 14900,
+                'monthly_price_cents' => 149000,
                 'max_staff' => 50,
                 'max_active_orders' => 500,
                 'features' => ['Multi-branch operations', 'Priority support', 'Billing-ready subscriptions', 'SaaS analytics'],

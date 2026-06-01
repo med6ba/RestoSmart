@@ -18,7 +18,7 @@
                                 <p class="font-semibold">{{ $tenant->name }}</p>
                                 <p class="text-sm text-zinc-600 dark:text-zinc-300">{{ ucfirst($tenant->status) }} {{ __('until') }} {{ optional($tenant->current_period_ends_at)->toFormattedDateString() }}</p>
                             </div>
-                            <a href="{{ route('tenant.admin', $tenant->id) }}" class="inline-flex justify-center rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800 app-focus">{{ __('Open') }}</a>
+                            <a href="{{ route('tenant.admin', $tenant->id) }}" class="inline-flex justify-center rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-800 app-focus">{{ __('Open') }}</a>
                         </div>
                     @empty
                         <p class="text-sm text-zinc-600 dark:text-zinc-300">{{ __('No approved restaurant yet.') }}</p>

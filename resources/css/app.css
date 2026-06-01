@@ -23,11 +23,11 @@
 
 @layer components {
     .app-focus {
-        @apply focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-zinc-950;
+        @apply focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-zinc-950;
     }
 
     .status-toast {
-        @apply rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200;
+        @apply rounded-lg border border-brand-200 bg-brand-50 p-4 text-sm text-brand-800 dark:border-brand-900/60 dark:bg-brand-950/40 dark:text-brand-200;
     }
 }
 
@@ -48,8 +48,8 @@
         background-color: rgb(24 24 27);
     }
 
-    .dark .bg-red-50 {
-        background-color: rgb(127 29 29 / 0.35);
+    .dark .bg-brand-50 {
+        background-color: rgb(252 124 0 / 0.14);
     }
 
     .dark .border-gray-200,
@@ -62,9 +62,9 @@
         border-color: rgb(63 63 70);
     }
 
-    .dark .border-red-200,
-    .dark .border-red-300 {
-        border-color: rgb(127 29 29);
+    .dark .border-brand-200,
+    .dark .border-brand-300 {
+        border-color: rgb(252 124 0 / 0.45);
     }
 
     .dark .divide-stone-100 > :not([hidden]) ~ :not([hidden]),
