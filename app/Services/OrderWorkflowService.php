@@ -299,7 +299,7 @@ class OrderWorkflowService
 
             $fresh = Ingredient::query()->find($ingredient->id);
             if ($fresh && $fresh->isLow()) {
-                $this->notify('admin', 'low_stock', __('Low stock: :name', ['name' => $fresh->name]), __('Current stock is :stock :unit.', ['stock' => $fresh->current_stock, 'unit' => $fresh->unit]));
+                $this->notify('kitchen', 'low_stock', __('Low stock: :name', ['name' => $fresh->name]), __('Current stock is :stock :unit.', ['stock' => $fresh->current_stock, 'unit' => $fresh->unit]));
             }
         }
     }

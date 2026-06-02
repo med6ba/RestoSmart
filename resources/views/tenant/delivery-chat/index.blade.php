@@ -35,7 +35,7 @@
                         @endphp
 
                         <a
-                            href="{{ route($routePrefix.'.show', [tenant('id'), $conversation]) }}"
+                            href="{{ route($routePrefix.'.show', [tenant('id'), $conversation, 'page' => $conversations->currentPage()]) }}"
                             @class([
                                 'group mb-2 block rounded-lg border p-4 transition app-focus',
                                 'border-brand-300 bg-brand-50/80 shadow-sm dark:border-brand-900/70 dark:bg-brand-950/30' => $isActive,
@@ -84,6 +84,12 @@
                         </div>
                     @endforelse
                 </div>
+
+                @if ($conversations->hasPages())
+                    <div class="border-t border-zinc-200 px-3 py-3 dark:border-zinc-800">
+                        {{ $conversations->onEachSide(0)->links() }}
+                    </div>
+                @endif
             </aside>
 
             <section @class([

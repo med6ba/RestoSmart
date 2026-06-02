@@ -73,7 +73,7 @@
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-end">
                     <textarea id="restobot_question" name="question" rows="2" class="block min-h-12 flex-1 resize-none rounded-lg border-zinc-300 text-sm shadow-sm app-focus dark:border-zinc-700" placeholder="{{ __('Message RestoBot...') }}" required>{{ old('question') }}</textarea>
                     <x-primary-button class="justify-center gap-2 sm:h-12">
-                        <x-icon name="arrow-right" class="h-4 w-4" />
+                        <x-icon name="arrow-right" class="h-4 w-4 rtl:rotate-180" />
                         {{ __('Send') }}
                     </x-primary-button>
                 </div>

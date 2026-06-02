@@ -48,7 +48,7 @@
         </script>
 
         <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
+        <link href="https://fonts.bunny.net/css?family=ibm-plex-sans-arabic:400,500,600,700|poppins:400,500,600,700&display=swap" rel="stylesheet" />
 
         <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" rel="stylesheet">
         <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
@@ -111,8 +111,7 @@
             @else
                 <header class="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
                     <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-                        <a href="{{ $tenantId ? route('tenant.menu', $tenantId) : route('home') }}" class="flex min-w-0 items-center gap-3">
-                            <x-application-logo class="h-9 w-9 shrink-0 text-brand-700 dark:text-brand-400" />
+                        <a href="{{ $tenantId ? route('tenant.menu', $tenantId) : route('home') }}" class="flex min-w-0 items-center">
                             <span class="truncate font-semibold">{{ $tenantId ? tenant('name') : config('app.name', 'RestoSmart') }}</span>
                         </a>
 

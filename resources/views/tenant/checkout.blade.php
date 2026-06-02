@@ -39,17 +39,17 @@
             <div class="grid gap-4 lg:grid-cols-3">
                 <label class="rounded-lg border border-stone-200 p-4" :class="type === 'local' ? 'border-brand-500 bg-brand-50' : ''">
                     <input type="radio" name="type" value="local" class="text-brand-700" @change="setType('local')" @checked($selectedType === 'local') @disabled(! $hasActiveTables)>
-                    <span class="ml-2 font-semibold">{{ __('Local') }}</span>
+                    <span class="ms-2 font-semibold">{{ __('Local') }}</span>
                     <p class="mt-1 text-sm text-stone-600">{{ __('Dine-in table QR scan.') }}</p>
                 </label>
                 <label class="rounded-lg border border-stone-200 p-4" :class="type === 'takeaway' ? 'border-brand-500 bg-brand-50' : ''">
                     <input type="radio" name="type" value="takeaway" class="text-brand-700" @change="setType('takeaway')" @checked($selectedType === 'takeaway')>
-                    <span class="ml-2 font-semibold">{{ __('Takeaway') }}</span>
+                    <span class="ms-2 font-semibold">{{ __('Takeaway') }}</span>
                     <p class="mt-1 text-sm text-stone-600">{{ __('Pickup after the kitchen marks it ready.') }}</p>
                 </label>
                 <label class="rounded-lg border border-stone-200 p-4" :class="type === 'delivery' ? 'border-brand-500 bg-brand-50' : ''">
                     <input type="radio" name="type" value="delivery" class="text-brand-700" @change="setType('delivery')" @checked($selectedType === 'delivery')>
-                    <span class="ml-2 font-semibold">{{ __('Delivery') }}</span>
+                    <span class="ms-2 font-semibold">{{ __('Delivery') }}</span>
                     <p class="mt-1 text-sm text-stone-600">{{ __('Driver dispatch with delivery status.') }}</p>
                 </label>
             </div>

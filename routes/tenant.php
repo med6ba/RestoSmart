@@ -74,6 +74,7 @@ Route::prefix('{tenant}')
                 Route::post('/kitchen/orders/{order}/preparing', [KitchenController::class, 'preparing'])->name('kitchen.preparing');
                 Route::post('/kitchen/orders/{order}/ready', [KitchenController::class, 'ready'])->name('kitchen.ready');
                 Route::post('/kitchen/orders/{order}/collected', [KitchenController::class, 'collected'])->name('kitchen.collected');
+                Route::post('/kitchen/stock-adjustments', [KitchenController::class, 'adjustStock'])->name('kitchen.stock.adjust');
             });
 
             Route::middleware('role:driver')->group(function () {
@@ -90,7 +91,6 @@ Route::prefix('{tenant}')
                 Route::post('/admin/categories', [AdminController::class, 'storeCategory'])->name('admin.categories.store');
                 Route::post('/admin/menu-items', [AdminController::class, 'storeMenuItem'])->name('admin.menu-items.store');
                 Route::post('/admin/staff', [AdminController::class, 'inviteStaff'])->name('admin.staff.store');
-                Route::post('/admin/stock-adjustments', [AdminController::class, 'adjustStock'])->name('admin.stock.adjust');
                 Route::post('/admin/tables', [AdminController::class, 'storeTable'])->name('admin.tables.store');
                 Route::get('/admin/tables/{restaurantTable}/qr', [AdminController::class, 'tableQr'])->name('admin.tables.qr');
                 Route::post('/admin/orders/{order}/assign', [AdminController::class, 'assign'])->name('admin.orders.assign');

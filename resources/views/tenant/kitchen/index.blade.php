@@ -1,3 +1,7 @@
+@php
+    $modalToShow = old('_modal');
+@endphp
+
 <x-app-layout>
     <x-slot name="header">
         <h1 class="text-xl font-semibold text-stone-950">{{ __('Kitchen display system') }}</h1>
@@ -108,5 +112,64 @@
                 <div class="rounded-lg border border-stone-200 bg-white p-6 text-sm text-stone-600 lg:col-span-3">{{ __('No kitchen orders waiting.') }}</div>
             @endforelse
         </div>
+
+        <section class="mt-8 rounded-lg border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                    <p class="text-sm font-semibold uppercase tracking-wide text-brand-700 dark:text-brand-300">{{ __('Inventory') }}</p>
+                    <h2 class="text-lg font-semibold text-zinc-950 dark:text-white">{{ __('Stock management') }}</h2>
+                </div>
+                <button type="button" x-data="" x-on:click.prevent="$dispatch('open-modal', 'adjust-stock')" class="rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white hover:bg-zinc-800 app-focus dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white">{{ __('Adjust stock') }}</button>
+            </div>
+
+            <div class="mt-5 divide-y divide-zinc-100 dark:divide-zinc-800">
+                @forelse ($ingredients as $ingredient)
+                    <div class="flex items-center justify-between gap-4 py-3">
+                        <div>
+                            <p class="font-semibold text-zinc-950 dark:text-white">{{ $ingredient->name }}</p>
+                            <p class="text-sm text-zinc-600 dark:text-zinc-300">{{ __('Low at :threshold :unit', ['threshold' => $ingredient->low_stock_threshold, 'unit' => $ingredient->unit]) }}</p>
+                        </div>
+                        <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $ingredient->isLow() ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200' : 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200' }}">{{ $ingredient->current_stock }} {{ $ingredient->unit }}</span>
+                    </div>
+                @empty
+                    <p class="py-4 text-sm text-zinc-600 dark:text-zinc-300">{{ __('No ingredients yet.') }}</p>
+                @endforelse
+            </div>
+        </section>
+
+        <x-modal name="adjust-stock" :show="$modalToShow === 'adjust-stock'" maxWidth="lg" focusable>
+            <form method="POST" action="{{ route('tenant.kitchen.stock.adjust', tenant('id')) }}" class="p-6">
+                @csrf
+                <input type="hidden" name="_modal" value="adjust-stock">
+                <h3 class="text-lg font-semibold text-zinc-950 dark:text-white">{{ __('Adjust stock') }}</h3>
+                <div class="mt-5 grid gap-4">
+                    <div>
+                        <x-input-label for="stock_ingredient_id" value="{{ __('Ingredient') }}" required />
+                        <select id="stock_ingredient_id" name="ingredient_id" class="mt-1 block w-full rounded-md border-zinc-300 text-sm" required>
+                            @foreach ($ingredients as $ingredient)
+                                <option value="{{ $ingredient->id }}" @selected((int) old('ingredient_id') === $ingredient->id)>{{ $ingredient->name }} ({{ $ingredient->current_stock }} {{ $ingredient->unit }})</option>
+                            @endforeach
+                        </select>
+                        <x-input-error :messages="$errors->get('ingredient_id')" class="mt-2" />
+                    </div>
+                    <div class="grid gap-4 sm:grid-cols-[160px_1fr]">
+                        <div>
+                            <x-input-label for="stock_quantity" value="{{ __('Quantity') }}" required />
+                            <x-text-input id="stock_quantity" name="quantity" type="number" step="0.01" value="{{ old('quantity') }}" placeholder="{{ __('+10 or -2') }}" class="mt-1 block w-full" required />
+                            <x-input-error :messages="$errors->get('quantity')" class="mt-2" />
+                        </div>
+                        <div>
+                            <x-input-label for="stock_note" value="{{ __('Reason') }}" />
+                            <x-text-input id="stock_note" name="note" value="{{ old('note') }}" class="mt-1 block w-full" />
+                            <x-input-error :messages="$errors->get('note')" class="mt-2" />
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end gap-3">
+                    <x-secondary-button x-on:click="$dispatch('close')">{{ __('Cancel') }}</x-secondary-button>
+                    <x-primary-button>{{ __('Adjust stock') }}</x-primary-button>
+                </div>
+            </form>
+        </x-modal>
     </div>
 </x-app-layout>

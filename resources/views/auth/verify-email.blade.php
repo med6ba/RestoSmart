@@ -20,12 +20,10 @@
             </div>
         </form>
 
-        <form method="POST" action="{{ route('logout') }}">
-            @csrf
-
-            <button type="submit" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500">
-                {{ __('Log Out') }}
-            </button>
-        </form>
+        <button type="button" x-data="" x-on:click.prevent="$dispatch('open-modal', 'confirm-logout-verify-email')" class="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2">
+            {{ __('Log Out') }}
+        </button>
     </div>
+
+    <x-logout-confirmation :action="route('logout')" name="confirm-logout-verify-email" />
 </x-guest-layout>

@@ -20,7 +20,7 @@
         <section class="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
             <!-- MRR -->
             <div class="group relative overflow-hidden rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50">
-                <div class="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-emerald-500/10 blur-2xl transition-all group-hover:bg-emerald-500/20"></div>
+                <div class="absolute -end-6 -top-6 h-24 w-24 rounded-full bg-emerald-500/10 blur-2xl transition-all group-hover:bg-emerald-500/20"></div>
                 <div class="flex items-center justify-between">
                     <p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">{{ __('MRR Global') }}</p>
                     <span class="grid h-8 w-8 place-items-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
@@ -39,7 +39,7 @@
 
             <!-- Restaurants -->
             <div class="group relative overflow-hidden rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50">
-                <div class="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-brand-500/10 blur-2xl transition-all group-hover:bg-brand-500/20"></div>
+                <div class="absolute -end-6 -top-6 h-24 w-24 rounded-full bg-brand-500/10 blur-2xl transition-all group-hover:bg-brand-500/20"></div>
                 <div class="flex items-center justify-between">
                     <p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">{{ __('Restaurants') }}</p>
                     <span class="grid h-8 w-8 place-items-center rounded-full bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
@@ -58,7 +58,7 @@
 
             <!-- Active -->
             <div class="group relative overflow-hidden rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50">
-                <div class="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-blue-500/10 blur-2xl transition-all group-hover:bg-blue-500/20"></div>
+                <div class="absolute -end-6 -top-6 h-24 w-24 rounded-full bg-blue-500/10 blur-2xl transition-all group-hover:bg-blue-500/20"></div>
                 <div class="flex items-center justify-between">
                     <p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">{{ __('Active') }}</p>
                     <span class="grid h-8 w-8 place-items-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
@@ -71,7 +71,7 @@
 
             <!-- Trials -->
             <div class="group relative overflow-hidden rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50">
-                <div class="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-amber-500/10 blur-2xl transition-all group-hover:bg-amber-500/20"></div>
+                <div class="absolute -end-6 -top-6 h-24 w-24 rounded-full bg-amber-500/10 blur-2xl transition-all group-hover:bg-amber-500/20"></div>
                 <div class="flex items-center justify-between">
                     <p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">{{ __('Trial') }}</p>
                     <span class="grid h-8 w-8 place-items-center rounded-full bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400">
@@ -84,7 +84,7 @@
 
             <!-- Pending -->
             <div class="group relative overflow-hidden rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50">
-                <div class="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-rose-500/10 blur-2xl transition-all group-hover:bg-rose-500/20"></div>
+                <div class="absolute -end-6 -top-6 h-24 w-24 rounded-full bg-rose-500/10 blur-2xl transition-all group-hover:bg-rose-500/20"></div>
                 <div class="flex items-center justify-between">
                     <p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">{{ __('Pending') }}</p>
                     <span class="grid h-8 w-8 place-items-center rounded-full bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400">
@@ -106,11 +106,11 @@
                 <div class="flex-1 overflow-x-auto p-0">
                     <table class="min-w-full divide-y divide-zinc-200 text-sm dark:divide-zinc-800">
                         <thead class="bg-zinc-50/50 dark:bg-zinc-950/50">
-                            <tr class="text-left text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                            <tr class="text-start text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                                 <th class="px-5 py-3">{{ __('Restaurant') }}</th>
                                 <th class="px-5 py-3">{{ __('Plan') }}</th>
                                 <th class="px-5 py-3">{{ __('Status') }}</th>
-                                <th class="px-5 py-3 text-right">{{ __('Action') }}</th>
+                                <th class="px-5 py-3 text-end">{{ __('Action') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800/50">
@@ -129,7 +129,7 @@
                                             {{ __(ucfirst($application->status)) }}
                                         </span>
                                     </td>
-                                    <td class="px-5 py-4 text-right">
+                                    <td class="px-5 py-4 text-end">
                                         @if ($application->status === 'pending')
                                             <div class="inline-flex gap-2">
                                                 <button type="button" x-data="" x-on:click.prevent="$dispatch('open-modal', 'approve-application-{{ $application->id }}')" class="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 app-focus shadow-sm shadow-emerald-500/20 transition-all">{{ __('Approve') }}</button>
@@ -234,7 +234,10 @@
                     <h2 class="text-lg font-semibold text-zinc-950 dark:text-white">{{ __('Tenants and subscriptions') }}</h2>
                     <p class="text-sm text-zinc-500 dark:text-zinc-400">{{ __('Manage subscriptions for every restaurant.') }}</p>
                 </div>
-                <a href="{{ route('platform.users.role', 'admin') }}" class="text-sm font-semibold text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 transition-colors">{{ __('View all') }} &rarr;</a>
+                <a href="{{ route('platform.users.role', 'admin') }}" class="inline-flex items-center gap-1 text-sm font-semibold text-brand-600 transition-colors hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300">
+                    {{ __('View all') }}
+                    <x-icon name="arrow-right" class="h-4 w-4 rtl:rotate-180" />
+                </a>
             </div>
             
             <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">

@@ -16,6 +16,13 @@ class Delivery extends Model
         'driver_id',
         'status',
         'route_summary',
+        'restaurant_latitude',
+        'restaurant_longitude',
+        'destination_latitude',
+        'destination_longitude',
+        'driver_latitude',
+        'driver_longitude',
+        'last_location_at',
         'assigned_at',
         'picked_up_at',
         'delivered_at',
@@ -25,6 +32,13 @@ class Delivery extends Model
         'assigned_at' => 'datetime',
         'picked_up_at' => 'datetime',
         'delivered_at' => 'datetime',
+        'last_location_at' => 'datetime',
+        'restaurant_latitude' => 'decimal:7',
+        'restaurant_longitude' => 'decimal:7',
+        'destination_latitude' => 'decimal:7',
+        'destination_longitude' => 'decimal:7',
+        'driver_latitude' => 'decimal:7',
+        'driver_longitude' => 'decimal:7',
     ];
 
     public function order(): BelongsTo

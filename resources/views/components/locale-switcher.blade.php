@@ -38,7 +38,7 @@
         x-transition:leave="transition ease-in duration-100"
         x-transition:leave-start="opacity-100 scale-100"
         x-transition:leave-end="opacity-0 scale-95"
-        class="absolute end-0 z-50 mt-2 w-48 origin-top-right overflow-hidden rounded-lg border border-zinc-200 bg-white p-1 shadow-lg dark:border-zinc-800 dark:bg-zinc-950"
+        class="absolute end-0 z-50 mt-2 w-48 ltr:origin-top-right rtl:origin-top-left overflow-hidden rounded-lg border border-zinc-200 bg-white p-1 shadow-lg dark:border-zinc-800 dark:bg-zinc-950"
         style="display: none;"
         role="menu"
     >

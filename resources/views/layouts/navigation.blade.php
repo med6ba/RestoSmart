@@ -4,6 +4,8 @@
     $homeRoute = $tenantId ? route('tenant.menu', $tenantId) : route('home');
     $dashboardRoute = $tenantId ? route('tenant.dashboard', $tenantId) : route('dashboard');
     $profileRoute = $tenantId ? route('tenant.profile.edit', $tenantId) : route('profile.edit');
+    $logoutRoute = $tenantId ? route('tenant.logout', $tenantId) : route('logout');
+    $workspaceName = $tenantId ? tenant('name') : config('app.name', 'RestoSmart');
 @endphp
 
 <nav x-data="{ open: false }" class="bg-white border-b border-stone-200">
@@ -13,14 +15,13 @@
             <div class="flex">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ $homeRoute }}" class="flex items-center gap-3">
-                        <x-application-logo class="h-9 w-9 shrink-0" />
-                        <span class="font-semibold tracking-tight">RestoSmart</span>
+                    <a href="{{ $homeRoute }}" class="flex items-center">
+                        <span class="font-semibold tracking-tight">{{ $workspaceName }}</span>
                     </a>
                 </div>
 
                 <!-- Navigation Links -->
-                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                <div class="hidden gap-8 sm:-my-px sm:ms-10 sm:flex">
                     @if ($user)
                         <x-nav-link :href="$dashboardRoute" :active="request()->routeIs('dashboard') || request()->routeIs('tenant.dashboard')">
                             {{ __('Dashboard') }}
@@ -74,15 +75,9 @@
                                 {{ __('Profile') }}
                             </x-dropdown-link>
 
-                            <form method="POST" action="{{ $tenantId ? route('tenant.logout', $tenantId) : route('logout') }}">
-                                @csrf
-
-                                <x-dropdown-link :href="$tenantId ? route('tenant.logout', $tenantId) : route('logout')"
-                                        onclick="event.preventDefault();
-                                                    this.closest('form').submit();">
-                                    {{ __('Log Out') }}
-                                </x-dropdown-link>
-                            </form>
+                            <button type="button" x-on:click.prevent="$dispatch('open-modal', 'confirm-logout-navigation')" class="block w-full px-4 py-2 text-start text-sm leading-5 text-gray-700 transition duration-150 ease-in-out hover:bg-gray-100 focus:bg-gray-100 focus:outline-none">
+                                {{ __('Log Out') }}
+                            </button>
                         </x-slot>
                     </x-dropdown>
                 @else
@@ -129,18 +124,15 @@
                     {{ __('Profile') }}
                 </x-responsive-nav-link>
 
-                <!-- Authentication -->
-                <form method="POST" action="{{ $tenantId ? route('tenant.logout', $tenantId) : route('logout') }}">
-                    @csrf
-
-                    <x-responsive-nav-link :href="$tenantId ? route('tenant.logout', $tenantId) : route('logout')"
-                            onclick="event.preventDefault();
-                                        this.closest('form').submit();">
-                        {{ __('Log Out') }}
-                    </x-responsive-nav-link>
-                </form>
+                <button type="button" x-on:click.prevent="$dispatch('open-modal', 'confirm-logout-navigation')" class="block w-full border-s-4 border-transparent px-4 py-2 text-start text-base font-medium text-gray-600 transition duration-150 ease-in-out hover:border-gray-300 hover:bg-gray-50 hover:text-gray-800 focus:border-gray-300 focus:bg-gray-50 focus:text-gray-800 focus:outline-none">
+                    {{ __('Log Out') }}
+                </button>
             </div>
         </div>
         @endif
     </div>
+
+    @if ($user)
+        <x-logout-confirmation :action="$logoutRoute" name="confirm-logout-navigation" />
+    @endif
 </nav>

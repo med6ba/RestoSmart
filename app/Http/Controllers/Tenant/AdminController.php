@@ -5,15 +5,12 @@ namespace App\Http\Controllers\Tenant;
 use App\Events\TenantRoleUpdated;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\InviteStaffRequest;
-use App\Http\Requests\StockAdjustmentRequest;
 use App\Http\Requests\StoreMenuItemRequest;
 use App\Models\Category;
-use App\Models\Ingredient;
 use App\Models\MenuItem;
 use App\Models\Notification;
 use App\Models\Order;
 use App\Models\RestaurantTable;
-use App\Models\StockMovement;
 use App\Models\User;
 use App\Services\OrderWorkflowService;
 use App\Support\QrCodeSvg;
@@ -36,13 +33,11 @@ class AdminController extends Controller
                 'today_orders' => Order::query()->whereDate('created_at', today())->count(),
                 'revenue' => Order::query()->where('payment_status', 'paid')->sum('total_cents'),
                 'active_orders' => Order::query()->whereNotIn('status', ['delivered', 'collected', 'cancelled'])->count(),
-                'low_stock' => Ingredient::query()->whereColumn('current_stock', '<=', 'low_stock_threshold')->count(),
             ],
             'orders' => Order::query()->with(['items', 'driver', 'restaurantTable'])->latest()->limit(12)->get(),
             'drivers' => User::query()->where('role', 'driver')->where('status', 'active')->get(),
             'staff' => User::query()->whereIn('role', ['admin', 'kitchen', 'driver'])->latest()->get(),
             'categories' => Category::query()->with('menuItems')->orderBy('sort_order')->get(),
-            'ingredients' => Ingredient::query()->orderBy('name')->get(),
             'notifications' => Notification::query()->where('role', 'admin')->latest()->limit(8)->get(),
             'tables' => RestaurantTable::query()->with('occupiedOrder')->where('is_active', true)->orderBy('sort_order')->get(),
             'tableCount' => RestaurantTable::query()->where('is_active', true)->count(),
@@ -112,17 +107,17 @@ class AdminController extends Controller
         $imageUrl = null;
         if ($request->filled('cropped_image')) {
             $base64Image = $request->input('cropped_image');
-            
+
             if (preg_match('/^data:image\/(\w+);base64,/', $base64Image, $type)) {
                 $base64Image = substr($base64Image, strpos($base64Image, ',') + 1);
                 $extension = strtolower($type[1]);
                 $extension = $extension === 'jpeg' ? 'jpg' : $extension;
 
                 $image = base64_decode($base64Image);
-                $filename = 'dishes/' . tenant('id') . '/' . Str::uuid() . '.' . $extension;
-                
+                $filename = 'dishes/'.tenant('id').'/'.Str::uuid().'.'.$extension;
+
                 Storage::disk('public')->put($filename, $image);
-                $imageUrl = '/storage/' . $filename;
+                $imageUrl = '/storage/'.$filename;
             }
         } elseif ($request->hasFile('image')) {
             $path = $request->file('image')->store(
@@ -147,27 +142,6 @@ class AdminController extends Controller
         ]);
 
         return back()->with('status', __('Menu item created.'));
-    }
-
-    public function adjustStock(StockAdjustmentRequest $request): RedirectResponse
-    {
-        $ingredient = Ingredient::query()->findOrFail($request->integer('ingredient_id'));
-        $quantity = (float) $request->input('quantity');
-
-        $ingredient->increment('current_stock', $quantity);
-
-        StockMovement::query()->create([
-            'ingredient_id' => $ingredient->id,
-            'type' => $quantity > 0 ? 'restock' : 'adjustment',
-            'quantity' => $quantity,
-            'note' => $request->input('note') ?: __('Manual stock adjustment'),
-        ]);
-
-        $this->broadcastTenantUpdate(['admin', 'kitchen'], 'stock', 'stock.adjusted', __('Stock adjusted for :name.', ['name' => $ingredient->name]), [
-            'ingredient' => ['id' => $ingredient->id, 'name' => $ingredient->name],
-        ]);
-
-        return back()->with('status', __('Stock adjusted.'));
     }
 
     public function inviteStaff(InviteStaffRequest $request): RedirectResponse

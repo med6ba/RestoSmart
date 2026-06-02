@@ -3,6 +3,14 @@
 @tailwind utilities;
 
 @layer base {
+    :root {
+        --font-sans: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+    }
+
+    html[lang^='ar'] {
+        --font-sans: 'IBM Plex Sans Arabic', ui-sans-serif, system-ui, sans-serif;
+    }
+
     html {
         color-scheme: light;
     }

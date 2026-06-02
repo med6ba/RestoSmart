@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\BillingHistory;
 use App\Models\Category;
 use App\Models\CustomerAddress;
+use App\Models\DeliveryMessage;
 use App\Models\Ingredient;
 use App\Models\MenuItem;
 use App\Models\Notification;
@@ -18,6 +19,7 @@ use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
 
 class DemoTenantSeeder extends Seeder
@@ -32,9 +34,13 @@ class DemoTenantSeeder extends Seeder
             'address' => '12 Demo Street',
             'city' => 'Demo City',
             'plan' => 'starter',
+            'status' => 'active',
             'order_prefix' => 'RS-DEMO',
             'client_address' => '44 Client Avenue',
             'office_address' => '91 Office Park',
+            'restaurant_location' => [40.730610, -73.935242],
+            'client_location' => [40.743120, -73.922420],
+            'office_location' => [40.720360, -73.996310],
             'users' => [
                 'admin' => ['name' => 'Demo Admin', 'email' => 'admin@demo.com', 'phone' => '+1 555 0201'],
                 'kitchen' => ['name' => 'Demo Kitchen', 'email' => 'kitchen@demo.com', 'phone' => '+1 555 0202'],
@@ -51,9 +57,13 @@ class DemoTenantSeeder extends Seeder
             'address' => '18 Rue Riad Zitoun, Marrakech',
             'city' => 'Marrakech',
             'plan' => 'pro',
+            'status' => 'active',
             'order_prefix' => 'RS-MED',
             'client_address' => '7 Avenue Mohammed V',
             'office_address' => '22 Gueliz Business Center',
+            'restaurant_location' => [31.625825, -7.989160],
+            'client_location' => [31.632410, -8.008450],
+            'office_location' => [31.636720, -8.013160],
             'users' => [
                 'admin' => ['name' => 'Salma El Idrissi', 'email' => 'admin@medina.test', 'phone' => '+212 600 100 011'],
                 'kitchen' => ['name' => 'Youssef Kitchen', 'email' => 'kitchen@medina.test', 'phone' => '+212 600 100 012'],
@@ -70,9 +80,13 @@ class DemoTenantSeeder extends Seeder
             'address' => '4 Boulevard Zerktouni, Casablanca',
             'city' => 'Casablanca',
             'plan' => 'business',
+            'status' => 'trial',
             'order_prefix' => 'RS-ATL',
             'client_address' => '35 Maarif Residence',
             'office_address' => '10 Casa Finance City',
+            'restaurant_location' => [33.589886, -7.603869],
+            'client_location' => [33.581020, -7.638260],
+            'office_location' => [33.546900, -7.666020],
             'users' => [
                 'admin' => ['name' => 'Amine Berrada', 'email' => 'admin@atlas.test', 'phone' => '+212 600 200 021'],
                 'kitchen' => ['name' => 'Meryem Kitchen', 'email' => 'kitchen@atlas.test', 'phone' => '+212 600 200 022'],
@@ -89,9 +103,13 @@ class DemoTenantSeeder extends Seeder
             'address' => '2 Corniche Road, Agadir',
             'city' => 'Agadir',
             'plan' => 'pro',
+            'status' => 'suspended',
             'order_prefix' => 'RS-OCN',
             'client_address' => '16 Marina Residence',
             'office_address' => '5 Agadir Bay Offices',
+            'restaurant_location' => [30.427755, -9.598107],
+            'client_location' => [30.421890, -9.617260],
+            'office_location' => [30.397150, -9.586890],
             'users' => [
                 'admin' => ['name' => 'Imane Lahbabi', 'email' => 'admin@ocean.test', 'phone' => '+212 600 300 031'],
                 'kitchen' => ['name' => 'Rachid Kitchen', 'email' => 'kitchen@ocean.test', 'phone' => '+212 600 300 032'],
@@ -133,9 +151,9 @@ class DemoTenantSeeder extends Seeder
                 'owner_email' => $restaurant['owner_email'],
                 'phone' => $restaurant['phone'],
                 'address' => $restaurant['address'],
-                'status' => 'trial',
-                'trial_ends_at' => now()->addDays(30),
-                'current_period_ends_at' => now()->addDays(30),
+                'status' => $restaurant['status'],
+                'trial_ends_at' => $restaurant['status'] === 'trial' ? now()->addDays(30) : null,
+                'current_period_ends_at' => in_array($restaurant['status'], ['trial', 'active'], true) ? now()->addDays(30) : null,
                 'plan_id' => $plan->id,
                 'data' => [
                     'local_url' => '/'.$restaurant['id'],
@@ -169,10 +187,10 @@ class DemoTenantSeeder extends Seeder
             ['tenant_id' => $tenant->id],
             [
                 'plan_id' => $plan->id,
-                'status' => 'trial',
-                'trial_started_at' => now(),
+                'status' => $tenant->status,
+                'trial_started_at' => $tenant->status === 'trial' ? now() : null,
                 'trial_ends_at' => $tenant->trial_ends_at,
-                'current_period_started_at' => now(),
+                'current_period_started_at' => in_array($tenant->status, ['trial', 'active'], true) ? now() : null,
                 'current_period_ends_at' => $tenant->current_period_ends_at,
             ],
         );
@@ -186,11 +204,79 @@ class DemoTenantSeeder extends Seeder
             ],
         );
 
+        BillingHistory::query()->updateOrCreate(
+            ['tenant_id' => $tenant->id, 'status' => 'paid'],
+            [
+                'plan_id' => $plan->id,
+                'amount_cents' => $plan->monthly_price_cents,
+                'issued_at' => now()->subDays(45)->startOfDay(),
+                'paid_at' => now()->subDays(44)->setTime(10, 15),
+            ],
+        );
+
+        BillingHistory::query()->updateOrCreate(
+            ['tenant_id' => $tenant->id, 'status' => 'pending'],
+            [
+                'plan_id' => $plan->id,
+                'amount_cents' => $plan->monthly_price_cents,
+                'issued_at' => now()->addDays(15)->startOfDay(),
+                'paid_at' => null,
+            ],
+        );
+
         PlatformNotification::query()->updateOrCreate(
             ['tenant_id' => $tenant->id, 'type' => 'tenant_approved'],
             [
                 'title' => 'Restaurant approved',
                 'body' => $restaurant['name'].' is ready at /'.$restaurant['id'],
+            ],
+        );
+
+        PlatformNotification::query()->updateOrCreate(
+            ['tenant_id' => $tenant->id, 'type' => 'subscription_status'],
+            [
+                'title' => 'Subscription seeded',
+                'body' => $restaurant['name'].' has demo billing history and trial metadata.',
+                'read_at' => $restaurant['id'] === 'demo' ? null : now()->subDays(1),
+            ],
+        );
+
+        if ($restaurant['id'] === 'demo') {
+            $this->seedApplicationQueue($plan);
+        }
+    }
+
+    private function seedApplicationQueue(Plan $plan): void
+    {
+        RestaurantApplication::query()->updateOrCreate(
+            ['desired_slug' => 'fresh-corner'],
+            [
+                'restaurant_name' => 'Fresh Corner',
+                'owner_name' => 'Mona Alvarez',
+                'owner_email' => 'owner@fresh-corner.test',
+                'phone' => '+1 555 0401',
+                'address' => '80 Market Street',
+                'plan_id' => $plan->id,
+                'status' => 'pending',
+                'tenant_id' => null,
+                'decision_note' => null,
+                'decided_at' => null,
+            ],
+        );
+
+        RestaurantApplication::query()->updateOrCreate(
+            ['desired_slug' => 'closed-pop-up'],
+            [
+                'restaurant_name' => 'Closed Pop Up',
+                'owner_name' => 'Jon Reed',
+                'owner_email' => 'owner@closed-pop-up.test',
+                'phone' => '+1 555 0402',
+                'address' => '21 Temporary Lane',
+                'plan_id' => $plan->id,
+                'status' => 'rejected',
+                'tenant_id' => null,
+                'decision_note' => 'Missing legal restaurant details in demo data.',
+                'decided_at' => now()->subDays(3),
             ],
         );
     }
@@ -432,7 +518,7 @@ class DemoTenantSeeder extends Seeder
             'delivery_address' => null,
             'kitchen_notes' => 'Table QR scanned.',
             'placed_at' => now()->subMinutes(7),
-        ]);
+        ], $restaurant);
 
         $this->order($prefix.'-1001', $users['client'], null, [
             [$items['chicken_bowl'], 1, null],
@@ -444,7 +530,7 @@ class DemoTenantSeeder extends Seeder
             'delivery_address' => $restaurant['client_address'],
             'kitchen_notes' => 'Sauce on the side.',
             'placed_at' => now()->subMinutes(18),
-        ]);
+        ], $restaurant);
 
         $this->order($prefix.'-1002', $users['client'], null, [
             [$items['kofta_wrap'], 2, 'Extra pickles'],
@@ -455,7 +541,7 @@ class DemoTenantSeeder extends Seeder
             'delivery_address' => null,
             'kitchen_notes' => 'Customer arrives in 15 minutes.',
             'placed_at' => now()->subMinutes(25),
-        ]);
+        ], $restaurant);
 
         $this->order($prefix.'-1003', $users['client'], null, [
             [$items['veggie_bowl'], 1, 'No tahini'],
@@ -468,7 +554,7 @@ class DemoTenantSeeder extends Seeder
             'kitchen_notes' => null,
             'placed_at' => now()->subMinutes(32),
             'ready_at' => now()->subMinutes(4),
-        ]);
+        ], $restaurant);
 
         $this->order($prefix.'-1004', $users['client'], $users['driver'], [
             [$items['date_cake'], 2, null],
@@ -481,14 +567,45 @@ class DemoTenantSeeder extends Seeder
             'kitchen_notes' => null,
             'placed_at' => now()->subMinutes(58),
             'ready_at' => now()->subMinutes(22),
-        ]);
+        ], $restaurant);
+
+        $this->order($prefix.'-1005', $users['client'], $users['driver'], [
+            [$items['chicken_bowl'], 1, null],
+            [$items['date_cake'], 1, null],
+        ], [
+            'type' => 'delivery',
+            'status' => 'delivered',
+            'payment_status' => 'paid',
+            'delivery_address' => $restaurant['client_address'],
+            'kitchen_notes' => null,
+            'placed_at' => now()->subHours(2),
+            'ready_at' => now()->subMinutes(95),
+            'delivered_at' => now()->subMinutes(74),
+        ], $restaurant);
+
+        $this->order($prefix.'-1006', $users['client'], null, [
+            [$items['kofta_wrap'], 1, null],
+            [$items['mint_tea'], 1, null],
+        ], [
+            'type' => 'local',
+            'status' => 'collected',
+            'payment_status' => 'paid',
+            'restaurant_table_id' => $tables['T002']->id,
+            'delivery_address' => null,
+            'kitchen_notes' => 'Served at table.',
+            'placed_at' => now()->subHours(3),
+            'ready_at' => now()->subMinutes(160),
+            'collected_at' => now()->subMinutes(145),
+        ], $restaurant);
+
+        $this->seedDeliveryMessages($users, $restaurant);
     }
 
     /**
      * @param  array<int, array{0: MenuItem, 1: int, 2: string|null}>  $items
      * @param  array<string, mixed>  $payload
      */
-    private function order(string $code, User $customer, ?User $driver, array $items, array $payload): Order
+    private function order(string $code, User $customer, ?User $driver, array $items, array $payload, array $restaurant): Order
     {
         $subtotal = collect($items)->sum(fn (array $line) => $line[0]->price_cents * $line[1]);
         $deliveryFee = $payload['type'] === 'delivery' ? 300 : 0;
@@ -516,6 +633,8 @@ class DemoTenantSeeder extends Seeder
                 'kitchen_notes' => $payload['kitchen_notes'],
                 'placed_at' => $payload['placed_at'],
                 'ready_at' => $payload['ready_at'] ?? null,
+                'delivered_at' => $payload['delivered_at'] ?? null,
+                'collected_at' => $payload['collected_at'] ?? null,
             ],
         );
 
@@ -561,7 +680,7 @@ class DemoTenantSeeder extends Seeder
                     'assigned_at' => in_array($payload['status'], ['assigned', 'out_for_delivery', 'delivered'], true) ? now()->subMinutes(20) : null,
                     'picked_up_at' => in_array($payload['status'], ['out_for_delivery', 'delivered'], true) ? now()->subMinutes(12) : null,
                     'delivered_at' => $payload['status'] === 'delivered' ? $payload['delivered_at'] ?? now()->subMinutes(2) : null,
-                ],
+                ] + $this->deliveryRouteAttributes($payload, $restaurant),
             );
         } else {
             $order->delivery()->delete();
@@ -583,6 +702,81 @@ class DemoTenantSeeder extends Seeder
     }
 
     /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>  $restaurant
+     * @return array<string, mixed>
+     */
+    private function deliveryRouteAttributes(array $payload, array $restaurant): array
+    {
+        $destination = $payload['delivery_address'] === $restaurant['office_address']
+            ? $restaurant['office_location']
+            : $restaurant['client_location'];
+
+        $driver = match ($payload['status']) {
+            'out_for_delivery' => [
+                round(($restaurant['restaurant_location'][0] + $destination[0]) / 2, 7),
+                round(($restaurant['restaurant_location'][1] + $destination[1]) / 2, 7),
+            ],
+            'delivered' => $destination,
+            default => [null, null],
+        };
+
+        return [
+            'restaurant_latitude' => $restaurant['restaurant_location'][0],
+            'restaurant_longitude' => $restaurant['restaurant_location'][1],
+            'destination_latitude' => $destination[0],
+            'destination_longitude' => $destination[1],
+            'driver_latitude' => $driver[0],
+            'driver_longitude' => $driver[1],
+            'last_location_at' => $driver[0] ? now()->subMinutes(6) : null,
+        ];
+    }
+
+    /**
+     * @param  array<string, User>  $users
+     * @param  array<string, mixed>  $restaurant
+     */
+    private function seedDeliveryMessages(array $users, array $restaurant): void
+    {
+        $prefix = $restaurant['order_prefix'];
+
+        $this->deliveryMessage($prefix.'-1004', $users['client'], $users['driver'], 'Hi, I am near the door.', now()->subMinutes(18), true);
+        $this->deliveryMessage($prefix.'-1004', $users['driver'], $users['client'], 'Perfect, I am 5 minutes away.', now()->subMinutes(16), false);
+        $this->deliveryMessage($prefix.'-1004', $users['client'], $users['driver'], 'Gate code is 2408.', now()->subMinutes(11), false);
+
+        $this->deliveryMessage($prefix.'-1005', $users['driver'], $users['client'], 'Delivered at the reception desk.', now()->subMinutes(76), true);
+        $this->deliveryMessage($prefix.'-1005', $users['client'], $users['driver'], 'Received, thank you.', now()->subMinutes(74), true);
+    }
+
+    private function deliveryMessage(string $orderCode, User $sender, User $receiver, string $message, Carbon $sentAt, bool $isRead): void
+    {
+        $order = Order::query()->where('public_code', $orderCode)->with('delivery')->first();
+
+        if (! $order?->delivery) {
+            return;
+        }
+
+        $deliveryMessage = DeliveryMessage::query()->updateOrCreate(
+            [
+                'order_id' => $order->id,
+                'sender_id' => $sender->id,
+                'message' => $message,
+            ],
+            [
+                'delivery_id' => $order->delivery->id,
+                'receiver_id' => $receiver->id,
+                'is_read' => $isRead,
+                'read_at' => $isRead ? $sentAt->copy()->addMinute() : null,
+            ],
+        );
+
+        $deliveryMessage->forceFill([
+            'created_at' => $sentAt,
+            'updated_at' => $sentAt,
+        ])->save();
+    }
+
+    /**
      * @param  array<string, User>  $users
      * @param  array<string, mixed>  $restaurant
      */
@@ -590,8 +784,13 @@ class DemoTenantSeeder extends Seeder
     {
         $prefix = $restaurant['order_prefix'];
 
+        Notification::query()
+            ->where('role', 'admin')
+            ->where('type', 'low_stock')
+            ->delete();
+
         Notification::query()->updateOrCreate(
-            ['role' => 'admin', 'type' => 'low_stock', 'title' => 'Low stock: Market vegetables'],
+            ['role' => 'kitchen', 'type' => 'low_stock', 'title' => 'Low stock: Market vegetables'],
             ['body' => 'Current stock is below the configured threshold.'],
         );
 

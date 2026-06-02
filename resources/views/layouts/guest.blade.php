@@ -29,15 +29,14 @@
         </script>
 
         <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
+        <link href="https://fonts.bunny.net/css?family=ibm-plex-sans-arabic:400,500,600,700|poppins:400,500,600,700&display=swap" rel="stylesheet" />
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="font-sans text-zinc-950 antialiased dark:text-zinc-50">
         <div class="min-h-screen bg-zinc-50 px-4 py-6 dark:bg-zinc-950">
             <div class="mx-auto flex w-full max-w-5xl items-center justify-between gap-4">
-                <a href="{{ $tenantId ? route('tenant.menu', $tenantId) : route('home') }}" class="flex items-center gap-3">
-                    <x-application-logo class="h-10 w-10 text-brand-700 dark:text-brand-400" />
+                <a href="{{ $tenantId ? route('tenant.menu', $tenantId) : route('home') }}" class="flex items-center">
                     <span class="font-semibold">{{ $workspaceName }}</span>
                 </a>
 

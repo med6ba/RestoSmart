@@ -29,7 +29,7 @@ export default {
                 },
             },
             fontFamily: {
-                sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+                sans: ['var(--font-sans)', ...defaultTheme.fontFamily.sans],
             },
         },
     },

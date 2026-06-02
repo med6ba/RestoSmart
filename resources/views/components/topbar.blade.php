@@ -26,7 +26,7 @@
             </div>
         </div>
 
-        <div class="flex items-center gap-x-4 lg:gap-x-6 ml-auto">
+        <div class="flex items-center gap-x-4 lg:gap-x-6 ms-auto">
             <div class="flex items-center gap-x-3 sm:gap-x-4">
                 <!-- Theme Switcher -->
                 <x-theme-switcher />

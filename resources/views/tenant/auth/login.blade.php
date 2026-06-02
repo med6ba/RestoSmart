@@ -44,7 +44,7 @@
                         <button
                             type="button"
                             x-on:click="fillDemo(@js($account['email']))"
-                            class="flex items-center gap-2 rounded-lg border border-brand-200/80 bg-white/80 px-3 py-2.5 text-left text-sm font-semibold text-zinc-800 shadow-sm transition-all duration-200 hover:border-brand-300 hover:bg-white hover:shadow-md hover:shadow-brand-500/10 app-focus dark:border-brand-900/60 dark:bg-zinc-900/80 dark:text-zinc-100 dark:hover:border-brand-700 dark:hover:bg-zinc-900"
+                            class="flex items-center gap-2 rounded-lg border border-brand-200/80 bg-white/80 px-3 py-2.5 text-start text-sm font-semibold text-zinc-800 shadow-sm transition-all duration-200 hover:border-brand-300 hover:bg-white hover:shadow-md hover:shadow-brand-500/10 app-focus dark:border-brand-900/60 dark:bg-zinc-900/80 dark:text-zinc-100 dark:hover:border-brand-700 dark:hover:bg-zinc-900"
                         >
                             <span class="flex h-6 w-6 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-700 dark:bg-brand-900/50 dark:text-brand-300">
                                 {{ substr($account['label'], 0, 1) }}

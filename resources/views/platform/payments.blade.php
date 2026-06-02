@@ -14,13 +14,13 @@
 
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-zinc-200 text-sm dark:divide-zinc-800">
-                    <thead class="bg-zinc-50 text-left text-xs font-semibold uppercase text-zinc-500 dark:bg-zinc-950 dark:text-zinc-400">
+                    <thead class="bg-zinc-50 text-start text-xs font-semibold uppercase text-zinc-500 dark:bg-zinc-950 dark:text-zinc-400">
                         <tr>
                             <th class="px-5 py-3">{{ __('Restaurant') }}</th>
                             <th class="px-5 py-3">{{ __('Subscription type') }}</th>
                             <th class="px-5 py-3">{{ __('Last payment') }}</th>
                             <th class="px-5 py-3">{{ __('Next payment') }}</th>
-                            <th class="px-5 py-3 text-right">{{ __('History') }}</th>
+                            <th class="px-5 py-3 text-end">{{ __('History') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -62,13 +62,13 @@
                                         <span class="text-zinc-500 dark:text-zinc-400">-</span>
                                     @endif
                                 </td>
-                                <td class="px-5 py-4 align-top text-right">
+                                <td class="px-5 py-4 align-top text-end">
                                     @if($tenant->billingHistories->isNotEmpty())
                                         <button @click="open = !open" class="text-sm font-semibold text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 transition">
                                             {{ trans_choice(':count payment|:count payments', $tenant->billingHistories->count(), ['count' => $tenant->billingHistories->count()]) }}
                                         </button>
                                         
-                                        <div x-show="open" x-collapse x-cloak class="mt-3 text-left bg-zinc-50 dark:bg-zinc-950 p-3 rounded border border-zinc-200 dark:border-zinc-800 text-xs">
+                                        <div x-show="open" x-collapse x-cloak class="mt-3 rounded border border-zinc-200 bg-zinc-50 p-3 text-start text-xs dark:border-zinc-800 dark:bg-zinc-950">
                                             <ul class="space-y-2">
                                                 @foreach($tenant->billingHistories as $history)
                                                     <li class="flex justify-between border-b border-zinc-200 dark:border-zinc-800 pb-1 last:border-0 last:pb-0">

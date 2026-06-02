@@ -16,6 +16,8 @@ use Throwable;
 
 class DeliveryChatController extends Controller
 {
+    private const CONVERSATIONS_PER_PAGE = 5;
+
     private const VISIBLE_ORDER_STATUSES = ['assigned', 'out_for_delivery', 'delivered'];
 
     private const VISIBLE_DELIVERY_STATUSES = ['assigned', 'accepted', 'picked_up', 'out_for_delivery', 'on_the_way', 'delivered'];
@@ -91,7 +93,9 @@ class DeliveryChatController extends Controller
     private function viewData(Request $request, ?Order $activeOrder = null, array $extra = []): array
     {
         return array_merge([
-            'conversations' => $this->conversationQuery($request)->get(),
+            'conversations' => $this->conversationQuery($request)
+                ->paginate(self::CONVERSATIONS_PER_PAGE)
+                ->withQueryString(),
             'activeOrder' => $activeOrder,
             'routePrefix' => $this->routePrefix($request),
             'statusLabels' => collect(Order::STATUS_FLOW)->map(fn (string $label): string => __($label))->all(),
