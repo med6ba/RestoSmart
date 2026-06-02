@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\Tenant\AdminController;
 use App\Http\Controllers\Tenant\AuthController;
 use App\Http\Controllers\Tenant\CartController;
@@ -12,7 +14,6 @@ use App\Http\Controllers\Tenant\KitchenController;
 use App\Http\Controllers\Tenant\MenuController;
 use App\Http\Controllers\Tenant\OrderController;
 use App\Http\Controllers\Tenant\RestoBotController;
-use App\Http\Controllers\SettingsController;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByPath;
 
@@ -31,7 +32,7 @@ use Stancl\Tenancy\Middleware\InitializeTenancyByPath;
 Route::prefix('{tenant}')
     ->middleware(['web', InitializeTenancyByPath::class])
     ->name('tenant.')
-    ->where(['tenant' => '^(?!(?:login|register|dashboard|restaurant|profile|locale|logout|password|verify-email|confirm-password|email|plans|tenants|applications|storage|build|images|up)$)[a-z0-9][a-z0-9-]*$'])
+    ->where(['tenant' => '^(?!(?:login|register|dashboard|restaurant|profile|users|impersonation|locale|logout|password|verify-email|confirm-password|email|plans|tenants|applications|storage|build|images|up)$)[a-z0-9][a-z0-9-]*$'])
     ->group(function () {
         Route::get('/', MenuController::class)->name('menu');
 
@@ -49,6 +50,9 @@ Route::prefix('{tenant}')
         Route::middleware('auth')->group(function () {
             Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
             Route::get('/dashboard', DashboardController::class)->name('dashboard');
+            Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+            Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+            Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
             Route::get('/settings', SettingsController::class)->name('settings');
             Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
             Route::get('/orders/{order}/status', [OrderController::class, 'status'])->name('orders.status');

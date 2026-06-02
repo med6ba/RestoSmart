@@ -54,7 +54,7 @@
                         @if ($order->status === 'received')
                             <button type="button" x-data="" x-on:click.prevent="$dispatch('open-modal', 'start-order-{{ $order->id }}')" class="rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white">Start</button>
                         @endif
-                        @if (in_array($order->status, ['received', 'preparing'], true))
+                        @if ($order->status === 'preparing')
                             <button type="button" x-data="" x-on:click.prevent="$dispatch('open-modal', 'ready-order-{{ $order->id }}')" class="rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold text-white">Ready</button>
                         @endif
                         @if (in_array($order->type, ['takeaway', 'click_collect'], true) && $order->status === 'ready')
@@ -76,7 +76,7 @@
                         </x-modal>
                     @endif
 
-                    @if (in_array($order->status, ['received', 'preparing'], true))
+                    @if ($order->status === 'preparing')
                         <x-modal name="ready-order-{{ $order->id }}" maxWidth="md" focusable>
                             <form method="POST" action="{{ route('tenant.kitchen.ready', [tenant('id'), $order]) }}" class="p-6">
                                 @csrf

@@ -21,6 +21,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -75,9 +76,9 @@ class AdminController extends Controller
         return back()->with('status', __('Table QR added.'));
     }
 
-    public function tableQr(RestaurantTable $restaurantTable): Response
+    public function tableQr(Request $request, RestaurantTable $restaurantTable): Response
     {
-        return response(QrCodeSvg::make($restaurantTable->qrPayload()), 200, [
+        return response(QrCodeSvg::make($this->tableQrPayload($request, $restaurantTable)), 200, [
             'Content-Type' => 'image/svg+xml',
             'Cache-Control' => 'private, no-store',
         ]);
@@ -108,6 +109,29 @@ class AdminController extends Controller
     {
         $data = $request->validated();
 
+        $imageUrl = null;
+        if ($request->filled('cropped_image')) {
+            $base64Image = $request->input('cropped_image');
+            
+            if (preg_match('/^data:image\/(\w+);base64,/', $base64Image, $type)) {
+                $base64Image = substr($base64Image, strpos($base64Image, ',') + 1);
+                $extension = strtolower($type[1]);
+                $extension = $extension === 'jpeg' ? 'jpg' : $extension;
+
+                $image = base64_decode($base64Image);
+                $filename = 'dishes/' . tenant('id') . '/' . Str::uuid() . '.' . $extension;
+                
+                Storage::disk('public')->put($filename, $image);
+                $imageUrl = '/storage/' . $filename;
+            }
+        } elseif ($request->hasFile('image')) {
+            $path = $request->file('image')->store(
+                'dishes/'.tenant('id'),
+                'public'
+            );
+            $imageUrl = '/storage/'.$path;
+        }
+
         $menuItem = MenuItem::query()->create([
             'category_id' => $data['category_id'],
             'name' => $data['name'],
@@ -115,6 +139,7 @@ class AdminController extends Controller
             'price_cents' => (int) round($data['price'] * 100),
             'prep_minutes' => $data['prep_minutes'],
             'is_active' => $request->boolean('is_active'),
+            'image_url' => $imageUrl,
         ]);
 
         $this->broadcastTenantUpdate(['admin', 'client', 'kitchen'], 'menu', 'dish.created', __('Dish :name created.', ['name' => $menuItem->name]), [
@@ -199,6 +224,33 @@ class AdminController extends Controller
         } while (RestaurantTable::query()->where('code', $code)->exists());
 
         return $code;
+    }
+
+    private function tableQrPayload(Request $request, RestaurantTable $restaurantTable): string
+    {
+        $url = route('tenant.menu', tenant('id')).'?'.http_build_query([
+            'table' => $restaurantTable->qr_token,
+        ]);
+
+        if ($this->shouldPreferHttps($request, $url)) {
+            return Str::replaceFirst('http://', 'https://', $url);
+        }
+
+        return $url;
+    }
+
+    private function shouldPreferHttps(Request $request, string $url): bool
+    {
+        if (! Str::startsWith($url, 'http://')) {
+            return false;
+        }
+
+        $host = parse_url($url, PHP_URL_HOST);
+        $isLocalHost = in_array($host, ['localhost', '127.0.0.1', '::1'], true)
+            || ($host && Str::endsWith($host, ['.test', '.localhost']));
+
+        return ! $isLocalHost
+            && ($request->isSecure() || Str::startsWith((string) config('app.url'), 'https://') || app()->isProduction());
     }
 
     /**

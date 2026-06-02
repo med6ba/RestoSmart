@@ -14,16 +14,20 @@ use Illuminate\View\View;
 
 class CheckoutController extends Controller
 {
-    public function create(CartService $cart): View|RedirectResponse
+    public function create(Request $request, CartService $cart): View|RedirectResponse
     {
         if ($cart->count() === 0) {
             return redirect()->route('tenant.menu', tenant('id'))->with('status', __('Add at least one item before checkout.'));
         }
 
+        $tableToken = $this->initialTableToken($request);
+
         return view('tenant.checkout', [
             'cartLines' => $cart->lines(),
             'subtotalCents' => $cart->subtotalCents(),
             'hasActiveTables' => RestaurantTable::query()->where('is_active', true)->exists(),
+            'initialTableToken' => $tableToken,
+            'selectedType' => old('type', $tableToken !== '' ? 'local' : 'delivery'),
         ]);
     }
 
@@ -32,6 +36,7 @@ class CheckoutController extends Controller
         $order = $orders->placeOrder($request->user(), $cart->all(), $request->validated());
 
         $cart->clear();
+        $request->session()->forget($this->tableSessionKey());
 
         return redirect()->route('tenant.orders.show', [tenant('id'), $order])->with('status', __('Order placed. Your receipt PDF is ready.'));
     }
@@ -59,5 +64,32 @@ class CheckoutController extends Controller
             'table' => $table->code,
             'message' => __('Table :table scanned.', ['table' => $table->code]),
         ]);
+    }
+
+    private function initialTableToken(Request $request): string
+    {
+        $tableToken = trim((string) old(
+            'restaurant_table_token',
+            $request->query('table', $request->session()->get($this->tableSessionKey(), '')),
+        ));
+
+        if ($tableToken === '') {
+            return '';
+        }
+
+        if (RestaurantTable::query()->where('qr_token', $tableToken)->where('is_active', true)->exists()) {
+            $request->session()->put($this->tableSessionKey(), $tableToken);
+
+            return $tableToken;
+        }
+
+        $request->session()->forget($this->tableSessionKey());
+
+        return '';
+    }
+
+    private function tableSessionKey(): string
+    {
+        return 'table_qr.'.tenant('id');
     }
 }

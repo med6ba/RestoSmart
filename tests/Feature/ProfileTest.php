@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -77,6 +78,47 @@ class ProfileTest extends TestCase
 
         $this->assertGuest();
         $this->assertNull($user->fresh());
+    }
+
+    public function test_super_admin_cannot_delete_their_account(): void
+    {
+        $user = User::factory()->create(['role' => 'super']);
+
+        $response = $this
+            ->actingAs($user)
+            ->delete('/profile', [
+                'password' => 'password',
+            ]);
+
+        $response->assertForbidden();
+
+        $this->assertNotNull($user->fresh());
+    }
+
+    public function test_admin_account_deletion_removes_owned_tenant_and_tenant_users(): void
+    {
+        $user = User::factory()->create(['email' => 'owner@example.com', 'tenant_id' => 'demo']);
+        $staff = User::factory()->create(['role' => 'kitchen', 'tenant_id' => 'demo']);
+
+        Tenant::query()->create([
+            'id' => 'demo',
+            'name' => 'Demo Restaurant',
+            'slug' => 'demo',
+            'owner_email' => $user->email,
+            'status' => 'trial',
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->delete('/profile', [
+                'password' => 'password',
+            ]);
+
+        $response->assertRedirect('/');
+
+        $this->assertNull($user->fresh());
+        $this->assertNull($staff->fresh());
+        $this->assertDatabaseMissing('tenants', ['id' => 'demo']);
     }
 
     public function test_correct_password_must_be_provided_to_delete_account(): void

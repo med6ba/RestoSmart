@@ -38,6 +38,11 @@ class Tenant extends BaseTenant
         return $this->hasOne(Subscription::class);
     }
 
+    public function billingHistories(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(BillingHistory::class);
+    }
+
     public function routePrefix(): string
     {
         return '/'.$this->id;

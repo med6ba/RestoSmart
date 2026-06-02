@@ -3,6 +3,7 @@
     $user = Auth::user();
     $homeRoute = $tenantId ? route('tenant.menu', $tenantId) : route('home');
     $dashboardRoute = $tenantId ? route('tenant.dashboard', $tenantId) : route('dashboard');
+    $profileRoute = $tenantId ? route('tenant.profile.edit', $tenantId) : route('profile.edit');
 @endphp
 
 <nav x-data="{ open: false }" class="bg-white border-b border-stone-200">
@@ -69,11 +70,9 @@
                         </x-slot>
 
                         <x-slot name="content">
-                            @unless ($tenantId)
-                                <x-dropdown-link :href="route('profile.edit')">
-                                    {{ __('Profile') }}
-                                </x-dropdown-link>
-                            @endunless
+                            <x-dropdown-link :href="$profileRoute">
+                                {{ __('Profile') }}
+                            </x-dropdown-link>
 
                             <form method="POST" action="{{ $tenantId ? route('tenant.logout', $tenantId) : route('logout') }}">
                                 @csrf
@@ -126,11 +125,9 @@
             </div>
 
             <div class="mt-3 space-y-1">
-                @unless ($tenantId)
-                    <x-responsive-nav-link :href="route('profile.edit')">
-                        {{ __('Profile') }}
-                    </x-responsive-nav-link>
-                @endunless
+                <x-responsive-nav-link :href="$profileRoute">
+                    {{ __('Profile') }}
+                </x-responsive-nav-link>
 
                 <!-- Authentication -->
                 <form method="POST" action="{{ $tenantId ? route('tenant.logout', $tenantId) : route('logout') }}">

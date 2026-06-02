@@ -1,8 +1,10 @@
 @php
-    $selectedType = old('type', 'delivery');
+    $selectedType = $selectedType ?? old('type', 'delivery');
+    $initialTableToken = $initialTableToken ?? old('restaurant_table_token', '');
 
     if ($selectedType === 'local' && ! $hasActiveTables) {
         $selectedType = 'delivery';
+        $initialTableToken = '';
     }
 @endphp
 
@@ -17,10 +19,11 @@
             method="POST"
             action="{{ route('tenant.checkout.store', tenant('id')) }}"
             class="rounded-lg border border-stone-200 bg-white p-5"
-            x-data="checkoutFlow(@js($selectedType), @js(old('restaurant_table_token', '')), @js([
+            x-data="checkoutFlow(@js($selectedType), @js($initialTableToken), @js([
                 'scanned' => __('Table QR scanned.'),
                 'scanning' => __('Scanning table QR...'),
                 'unsupported' => __('QR scanning is not available in this browser.'),
+                'insecure' => __('Camera scanning requires HTTPS or localhost. Open this restaurant with a secure URL, or enter the table token manually.'),
                 'camera' => __('Camera access was not available.'),
                 'unreadable' => __('The QR code could not be read.'),
                 'notTable' => __('This QR code is not a table QR.'),

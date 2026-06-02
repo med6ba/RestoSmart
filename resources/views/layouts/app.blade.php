@@ -13,6 +13,7 @@
         request()->routeIs('tenant.driver') => __('Driver mobile dashboard'),
         request()->routeIs('tenant.settings', 'settings') => __('Settings'),
         request()->routeIs('tenant.restobot') => __('RestoBot'),
+        request()->routeIs('platform.users.*') => __('Users'),
         request()->routeIs('restaurants.apply') => __('Restaurant onboarding'),
         request()->routeIs('dashboard') => __('Dashboard'),
         request()->routeIs('profile.*') => __('Profile'),
@@ -36,6 +37,7 @@
                 <meta name="tenant-id" content="{{ $tenantId }}">
             @endif
             <meta name="user-role" content="{{ $user->role }}">
+            <meta name="user-id" content="{{ $user->id }}">
         @endauth
 
         <script>
@@ -46,6 +48,9 @@
 
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
+
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
@@ -59,31 +64,48 @@
             @auth
                 @include('layouts.sidebar')
 
-                <div class="min-h-screen pb-20 transition-[padding] duration-200 lg:pb-0 lg:ps-[var(--sidebar-shell-width)]">
-                    <header class="sticky top-0 z-20 border-b border-zinc-200 bg-zinc-50/90 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90 lg:hidden">
-                        <div class="flex h-16 items-center justify-between px-4">
-                            <button type="button" @click="sidebarOpen = true" class="grid h-10 w-10 place-items-center rounded-lg text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950 app-focus dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-white" aria-label="{{ __('Open sidebar') }}">
-                                <x-icon name="menu" class="h-5 w-5" />
-                            </button>
+                <div class="flex min-h-screen flex-col pb-20 transition-[padding] duration-200 lg:pb-0 lg:ps-[var(--sidebar-shell-width)]">
+                    <x-topbar />
 
-                            <a href="{{ $tenantId ? route('tenant.menu', $tenantId) : route('home') }}" class="flex items-center gap-2 font-semibold">
-                                <x-application-logo class="h-8 w-8 text-brand-700 dark:text-brand-400" />
-                                <span>{{ $tenantId ? tenant('name') : config('app.name', 'RestoSmart') }}</span>
-                            </a>
+                    <div class="flex flex-1 flex-col px-4 pb-4 sm:px-6 lg:pe-8 lg:ps-0 lg:pb-8">
+                        <div class="relative flex flex-1">
+                            <!-- Resize drag zone exactly on the card border -->
+                            <div
+                                class="absolute inset-y-0 -start-1 z-40 hidden w-2 cursor-ew-resize lg:block"
+                                x-on:mousedown.prevent="startResize($event)"
+                                x-on:dblclick.prevent="resetSidebarWidth()"
+                                title="{{ __('Resize sidebar') }}"
+                            ></div>
+                            <div class="flex-1 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                            @if (session()->has('impersonator_id'))
+                                <section class="border-b border-amber-200 bg-amber-50 lg:rounded-t-2xl dark:border-amber-900/60 dark:bg-amber-950/30">
+                                    <div class="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+                                        <div class="flex min-w-0 items-center gap-3 text-amber-900 dark:text-amber-100">
+                                            <span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-100">
+                                                <x-icon name="users" class="h-4 w-4" />
+                                            </span>
+                                            <p class="min-w-0 font-semibold">
+                                                {{ __('Mode impersonation') }}:
+                                                <span class="font-bold">{{ $user->name }}</span>
+                                            </p>
+                                        </div>
+                                        <form method="POST" action="{{ route('impersonation.stop') }}">
+                                            @csrf
+                                            <button class="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-300 bg-white px-3 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-100 app-focus dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100 dark:hover:bg-amber-900/50">
+                                                <x-icon name="log-out" class="h-4 w-4" />
+                                                {{ __('Retour super admin') }}
+                                            </button>
+                                        </form>
+                                    </div>
+                                </section>
+                            @endif
+
+                            <main class="h-full overflow-y-auto">
+                                {{ $slot }}
+                            </main>
                         </div>
-                    </header>
-
-                    @isset($header)
-                        <section class="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900/70">
-                            <div class="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
-                                {{ $header }}
-                            </div>
-                        </section>
-                    @endisset
-
-                    <main>
-                        {{ $slot }}
-                    </main>
+                        </div>
+                    </div>
                 </div>
             @else
                 <header class="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">

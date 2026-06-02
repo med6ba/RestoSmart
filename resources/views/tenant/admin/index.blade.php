@@ -50,6 +50,7 @@
 
             <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 @forelse ($tables as $table)
+                    @php($tableLink = route('tenant.menu', tenant('id')).'?'.http_build_query(['table' => $table->qr_token]))
                     <article class="relative overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 p-4 transition hover:border-brand-300 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-brand-800">
                         <div class="absolute inset-x-0 top-0 h-1 bg-brand-500"></div>
                         <div class="flex items-start justify-between gap-3">
@@ -64,11 +65,17 @@
                             <img src="{{ route('tenant.admin.tables.qr', [tenant('id'), $table]) }}" alt="{{ __(':table QR code', ['table' => $table->code]) }}" class="h-32 w-32">
                         </div>
 
-                        <p class="mt-3 break-all rounded-md bg-white px-2 py-1.5 font-mono text-[11px] text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">{{ $table->qr_token }}</p>
-                        <a href="{{ route('tenant.admin.tables.qr', [tenant('id'), $table]) }}" target="_blank" class="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-100 app-focus dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800">
-                            <x-icon name="external-link" class="h-4 w-4" />
-                            {{ __('Open QR') }}
-                        </a>
+                        <p class="mt-3 break-all rounded-md bg-white px-2 py-1.5 font-mono text-[11px] text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">{{ $tableLink }}</p>
+                        <div class="mt-3 grid gap-2">
+                            <a href="{{ route('tenant.admin.tables.qr', [tenant('id'), $table]) }}" target="_blank" class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-100 app-focus dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800">
+                                <x-icon name="qr-code" class="h-4 w-4" />
+                                {{ __('Open QR') }}
+                            </a>
+                            <a href="{{ $tableLink }}" target="_blank" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-700 px-3 py-2 text-xs font-semibold text-white hover:bg-brand-800 app-focus">
+                                <x-icon name="external-link" class="h-4 w-4" />
+                                {{ __('Open table link') }}
+                            </a>
+                        </div>
                     </article>
                 @empty
                     <div class="rounded-lg border border-dashed border-zinc-300 p-6 text-sm text-zinc-600 dark:border-zinc-700 dark:text-zinc-300 sm:col-span-2 lg:col-span-4">
@@ -248,7 +255,7 @@
         </x-modal>
 
         <x-modal name="create-dish" :show="$modalToShow === 'create-dish'" maxWidth="lg" focusable>
-            <form method="POST" action="{{ route('tenant.admin.menu-items.store', tenant('id')) }}" class="p-6">
+            <form method="POST" action="{{ route('tenant.admin.menu-items.store', tenant('id')) }}" class="p-6" enctype="multipart/form-data">
                 @csrf
                 <input type="hidden" name="_modal" value="create-dish">
                 <h3 class="text-lg font-semibold text-zinc-950 dark:text-white">Create dish</h3>
@@ -273,6 +280,30 @@
                         <x-input-label for="dish_description" value="Description" />
                         <textarea id="dish_description" name="description" rows="3" class="mt-1 block w-full rounded-md border-zinc-300 text-sm">{{ old('description') }}</textarea>
                         <x-input-error :messages="$errors->get('description')" class="mt-2" />
+                    </div>
+                    <div x-data="imageCropper()">
+                        <input type="hidden" name="cropped_image" x-ref="croppedImageInput">
+                        <x-input-label for="dish_image" value="Dish image" />
+                        
+                        <div class="mt-1" x-show="!preview">
+                            <label for="dish_image" class="flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-zinc-300 px-4 py-5 text-sm font-medium text-zinc-500 transition hover:border-brand-400 hover:text-brand-600 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-brand-600 dark:hover:text-brand-400">
+                                <x-icon name="image-plus" class="h-5 w-5" />
+                                <span>Upload image</span>
+                            </label>
+                            <input id="dish_image" name="image" type="file" accept="image/jpeg,image/png,image/webp" class="sr-only" x-ref="imageInput" @change="loadFile" />
+                        </div>
+
+                        <div x-show="preview" class="mt-1" style="display: none;">
+                            <div class="relative mb-2 h-64 w-full overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900">
+                                <img x-ref="image" :src="preview" class="max-w-full" />
+                            </div>
+                            <div class="flex gap-2">
+                                <button type="button" @click="reset()" class="flex-1 rounded-lg border border-zinc-300 px-3 py-2 text-sm font-semibold hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">Cancel</button>
+                            </div>
+                        </div>
+
+                        <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400" x-show="!preview">JPG, PNG or WebP. Max 2 MB.</p>
+                        <x-input-error :messages="$errors->get('image')" class="mt-2" />
                     </div>
                     <div class="grid gap-4 sm:grid-cols-3">
                         <div>
@@ -402,4 +433,58 @@
             </form>
         </x-modal>
     </div>
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('imageCropper', () => ({
+                preview: null,
+                cropper: null,
+                
+                loadFile(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        this.preview = e.target.result;
+                        this.$nextTick(() => {
+                            this.initCropper();
+                        });
+                    };
+                    reader.readAsDataURL(file);
+                },
+                
+                initCropper() {
+                    if (this.cropper) {
+                        this.cropper.destroy();
+                    }
+                    
+                    this.cropper = new Cropper(this.$refs.image, {
+                        aspectRatio: 16 / 9,
+                        viewMode: 1,
+                        autoCropArea: 1,
+                        crop: () => {
+                            this.$refs.croppedImageInput.value = this.cropper.getCroppedCanvas({
+                                maxWidth: 1200,
+                                maxHeight: 1200,
+                                fillColor: '#fff',
+                                imageSmoothingEnabled: true,
+                                imageSmoothingQuality: 'high',
+                            }).toDataURL('image/jpeg', 0.85);
+                        }
+                    });
+                },
+                
+                reset() {
+                    this.preview = null;
+                    this.$refs.imageInput.value = '';
+                    this.$refs.croppedImageInput.value = '';
+                    if (this.cropper) {
+                        this.cropper.destroy();
+                        this.cropper = null;
+                    }
+                }
+            }))
+        })
+    </script>
 </x-app-layout>

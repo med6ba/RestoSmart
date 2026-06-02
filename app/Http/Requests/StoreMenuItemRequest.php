@@ -21,6 +21,8 @@ class StoreMenuItemRequest extends FormRequest
             'price' => ['required', 'numeric', 'min:0.5', 'max:9999'],
             'prep_minutes' => ['required', 'integer', 'min:1', 'max:240'],
             'is_active' => ['nullable', 'boolean'],
+            'image' => ['nullable'],
+            'cropped_image' => ['nullable', 'string'],
         ];
     }
 }

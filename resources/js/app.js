@@ -1,6 +1,7 @@
 
 import Alpine from 'alpinejs';
 import Echo from 'laravel-echo';
+import jsQR from 'jsqr';
 import Pusher from 'pusher-js';
 
 const themeStorageKey = 'restosmart-theme';
@@ -115,7 +116,7 @@ window.sidebarShell = () => ({
 
         const storedWidth = Number(localStorage.getItem('restosmart-sidebar-width'));
 
-        if (storedWidth >= 240 && storedWidth <= 420) {
+        if (storedWidth >= 224 && storedWidth <= 420) {
             this.width = storedWidth;
         }
     },
@@ -148,7 +149,15 @@ window.sidebarShell = () => ({
             const isRtl = document.documentElement.dir === 'rtl';
             const nextWidth = isRtl ? window.innerWidth - moveEvent.clientX : moveEvent.clientX;
 
-            this.width = Math.min(420, Math.max(240, nextWidth));
+            if (nextWidth < 180) {
+                this.collapsed = true;
+                localStorage.setItem('restosmart-sidebar-collapsed', 'true');
+                return;
+            }
+
+            this.collapsed = false;
+            localStorage.setItem('restosmart-sidebar-collapsed', 'false');
+            this.width = Math.min(420, Math.max(224, nextWidth));
         };
 
         const stop = () => {
@@ -166,6 +175,120 @@ window.sidebarShell = () => ({
     },
 });
 
+window.liveClock = () => ({
+    currentTime: '--:--:--',
+    currentDate: '',
+    timezoneName: '',
+    timezoneOffset: '',
+    interval: null,
+
+    initClock() {
+        try {
+            this.timezoneName = Intl.DateTimeFormat().resolvedOptions().timeZone.toUpperCase();
+        } catch (e) {
+            this.timezoneName = 'UTC';
+        }
+        
+        this.updateTime();
+        this.interval = setInterval(() => this.updateTime(), 1000);
+    },
+
+    updateTime() {
+        const now = new Date();
+        this.currentTime = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        
+        const lang = document.documentElement.lang || 'en-US';
+        this.currentDate = now.toLocaleDateString(lang, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+        
+        const offset = -now.getTimezoneOffset();
+        const sign = offset >= 0 ? '+' : '-';
+        const hours = Math.floor(Math.abs(offset) / 60);
+        this.timezoneOffset = `(UTC${sign}${hours})`;
+    }
+});
+
+window.notificationsDropdown = () => ({
+    open: false,
+    notifications: [],
+    unreadCount: 0,
+    
+    init() {
+        this.fetchNotifications();
+        
+        const userId = document.querySelector('meta[name="user-id"]')?.getAttribute('content');
+        if (window.Echo && userId) {
+            window.Echo.private(`user.${userId}`)
+                .listen('.notification.sent', (e) => {
+                    this.notifications.unshift(e.notification);
+                    this.unreadCount++;
+                    
+                    if (typeof showRealtimeToast === 'function') {
+                        showRealtimeToast(e.notification.title);
+                    }
+                });
+        }
+    },
+    
+    toggle() {
+        this.open = !this.open;
+    },
+    
+    close() {
+        this.open = false;
+    },
+    
+    async fetchNotifications() {
+        try {
+            const response = await fetch('/api/notifications', {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                }
+            });
+            const data = await response.json();
+            this.notifications = data.notifications || [];
+            this.unreadCount = data.unreadCount || 0;
+        } catch (error) {
+            console.error('Failed to fetch notifications', error);
+        }
+    },
+    
+    async markAllAsRead() {
+        if (this.unreadCount === 0) return;
+        
+        this.unreadCount = 0;
+        this.notifications = this.notifications.map(n => ({...n, read_at: new Date().toISOString()}));
+        
+        try {
+            await fetch('/api/notifications/read', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+                }
+            });
+        } catch (error) {
+            console.error('Failed to mark notifications as read', error);
+        }
+    },
+    
+    formatTime(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    },
+    
+    getIconClass(type) {
+        switch(type) {
+            case 'success': return 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400';
+            case 'warning': return 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400';
+            case 'error': return 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400';
+            default: return 'bg-brand-100 text-brand-600 dark:bg-brand-900/30 dark:text-brand-400';
+        }
+    }
+});
+
 window.checkoutFlow = (initialType, initialTableToken = '', messages = {}) => ({
     type: initialType || 'delivery',
     tableToken: initialTableToken || '',
@@ -173,6 +296,7 @@ window.checkoutFlow = (initialType, initialTableToken = '', messages = {}) => ({
         scanned: 'Table QR scanned.',
         scanning: 'Scanning table QR...',
         unsupported: 'QR scanning is not available in this browser.',
+        insecure: 'Camera scanning requires HTTPS or localhost. Open this restaurant with a secure URL, or enter the table token manually.',
         camera: 'Camera access was not available.',
         unreadable: 'The QR code could not be read.',
         notTable: 'This QR code is not a table QR.',
@@ -188,6 +312,8 @@ window.checkoutFlow = (initialType, initialTableToken = '', messages = {}) => ({
     detector: null,
     stream: null,
     frame: null,
+    canvas: null,
+    canvasContext: null,
 
     setType(type) {
         this.type = type;
@@ -204,13 +330,27 @@ window.checkoutFlow = (initialType, initialTableToken = '', messages = {}) => ({
     async startScanner() {
         this.scanError = '';
 
-        if (!('BarcodeDetector' in window)) {
+        if (!window.isSecureContext && !['localhost', '127.0.0.1', '::1'].includes(window.location.hostname)) {
+            this.scanError = this.messages.insecure;
+            return;
+        }
+
+        if (!navigator.mediaDevices?.getUserMedia) {
             this.scanError = this.messages.unsupported;
             return;
         }
 
         try {
-            this.detector = new BarcodeDetector({ formats: ['qr_code'] });
+            this.detector = null;
+
+            if ('BarcodeDetector' in window) {
+                try {
+                    this.detector = new BarcodeDetector({ formats: ['qr_code'] });
+                } catch (error) {
+                    this.detector = null;
+                }
+            }
+
             this.stream = await navigator.mediaDevices.getUserMedia({
                 video: { facingMode: { ideal: 'environment' } },
                 audio: false,
@@ -229,15 +369,17 @@ window.checkoutFlow = (initialType, initialTableToken = '', messages = {}) => ({
     },
 
     async scanFrame() {
-        if (!this.scanning || !this.detector || !this.$refs.tableVideo) {
+        if (!this.scanning || !this.$refs.tableVideo) {
             return;
         }
 
         try {
-            const codes = await this.detector.detect(this.$refs.tableVideo);
+            const rawValue = this.detector
+                ? await this.detectWithBarcodeDetector()
+                : this.detectWithJsQr();
 
-            if (codes.length > 0) {
-                await this.applyScan(codes[0].rawValue || '');
+            if (rawValue) {
+                await this.applyScan(rawValue);
                 return;
             }
         } catch (error) {
@@ -247,11 +389,46 @@ window.checkoutFlow = (initialType, initialTableToken = '', messages = {}) => ({
         this.frame = requestAnimationFrame(() => this.scanFrame());
     },
 
+    async detectWithBarcodeDetector() {
+        const codes = await this.detector.detect(this.$refs.tableVideo);
+
+        return codes[0]?.rawValue || '';
+    },
+
+    detectWithJsQr() {
+        const video = this.$refs.tableVideo;
+
+        if (!video.videoWidth || !video.videoHeight) {
+            return '';
+        }
+
+        if (!this.canvas) {
+            this.canvas = document.createElement('canvas');
+            this.canvasContext = this.canvas.getContext('2d', { willReadFrequently: true });
+        }
+
+        if (!this.canvasContext) {
+            return '';
+        }
+
+        this.canvas.width = video.videoWidth;
+        this.canvas.height = video.videoHeight;
+        this.canvasContext.drawImage(video, 0, 0, this.canvas.width, this.canvas.height);
+
+        const imageData = this.canvasContext.getImageData(0, 0, this.canvas.width, this.canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+            inversionAttempts: 'attemptBoth',
+        });
+
+        return code?.data || '';
+    },
+
     async applyScan(rawValue) {
         const token = this.extractTableToken(rawValue);
 
         if (!token) {
             this.scanError = this.messages.notTable;
+            this.frame = requestAnimationFrame(() => this.scanFrame());
             return;
         }
 

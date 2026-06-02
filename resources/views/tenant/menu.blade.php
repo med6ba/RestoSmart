@@ -59,12 +59,18 @@
 
                     <div class="grid gap-4 md:grid-cols-2">
                         @forelse ($category->menuItems as $item)
-                            <article class="flex min-h-52 flex-col justify-between rounded-lg border border-zinc-200 bg-white p-4 transition hover:border-brand-300 hover:bg-brand-50/30 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-brand-800 dark:hover:bg-brand-950/20">
+                            <article class="group relative z-0 flex min-h-52 flex-col justify-between rounded-xl border border-zinc-200 bg-white p-2.5 transition-all duration-300 hover:z-50 hover:scale-[1.03] hover:border-brand-300 hover:shadow-2xl dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-brand-800">
+                                @if ($item->image_url)
+                                    <div class="relative w-full overflow-hidden rounded-lg bg-zinc-100 dark:bg-zinc-800" style="aspect-ratio: 16/9;">
+                                        <img src="{{ asset($item->image_url) }}" alt="{{ $item->name }}" class="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" />
+                                    </div>
+                                @endif
+                                <div class="flex flex-1 flex-col justify-between p-3">
                                 <div>
                                     <div class="flex items-start justify-between gap-4">
                                         <div>
                                             <h3 class="font-semibold text-zinc-950 dark:text-white">{{ $item->name }}</h3>
-                                            <p class="mt-1 min-h-10 text-sm leading-6 text-zinc-600 dark:text-zinc-300">{{ $item->description ?: __('No description yet.') }}</p>
+                                            <p class="mt-1 min-h-12 line-clamp-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">{{ $item->description ?: __('No description yet.') }}</p>
                                         </div>
                                         <p class="shrink-0 font-bold text-brand-700 dark:text-brand-300">{{ $item->formattedPrice() }}</p>
                                     </div>
@@ -88,6 +94,7 @@
                                         {{ __('Public preview') }}
                                     </div>
                                 @endif
+                                </div>
                             </article>
 
                             @if ($canOrder)

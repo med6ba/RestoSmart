@@ -15,6 +15,15 @@
         ];
     };
 
+    $pushGroup = function (string $label, string $icon, array $children) use (&$navItems) {
+        $navItems[] = [
+            'label' => $label,
+            'icon' => $icon,
+            'children' => $children,
+            'active' => collect($children)->contains(fn ($child) => $child['active']),
+        ];
+    };
+
     if ($tenantId) {
         if ($user->hasAnyRole('client')) {
             $pushNav(__('Menu'), route('tenant.menu', $tenantId), 'tenant.menu', 'utensils');
@@ -35,8 +44,16 @@
         if ($user->hasAnyRole('driver')) {
             $pushNav(__('Driver'), route('tenant.driver', $tenantId), 'tenant.driver', 'truck');
         }
+
+        $pushNav(__('Profile'), route('tenant.profile.edit', $tenantId), 'tenant.profile.*', 'user');
     } else {
         $pushNav(__('Dashboard'), route('dashboard'), 'dashboard', 'layout-dashboard');
+
+        if ($user->hasAnyRole('super')) {
+            $pushNav(__('Utilisateurs'), route('platform.users.index'), 'platform.users.*', 'users');
+            
+            $pushNav(__('Paiement'), route('platform.payments.index'), 'platform.payments.*', 'credit-card-check');
+        }
 
         if ($user->hasAnyRole('admin')) {
             $pushNav(__('Apply for a restaurant'), route('restaurants.apply'), 'restaurants.apply', 'building-store');
@@ -45,9 +62,8 @@
         $pushNav(__('Profile'), route('profile.edit'), 'profile.*', 'user');
     }
 
-    $pushNav(__('Settings'), $settingsRoute, $tenantId ? 'tenant.settings' : 'settings', 'settings');
-
     $bottomNavItems = collect($navItems)
+        ->flatMap(fn ($item) => $item['children'] ?? [$item])
         ->filter(fn ($item) => $item['active'] || ! str_contains($item['label'], __('Profile')))
         ->take(5)
         ->values();
@@ -76,23 +92,10 @@
 </div>
 
 <aside
-    class="fixed inset-y-0 start-0 z-30 hidden flex-col border-e border-zinc-200 bg-zinc-50 transition-[width] duration-200 dark:border-zinc-800 dark:bg-zinc-950 lg:flex"
+    class="fixed inset-y-0 start-0 z-30 hidden flex-col bg-zinc-50 transition-[width] duration-200 dark:bg-zinc-950 lg:flex"
     x-bind:style="'width: ' + effectiveWidth() + 'px'"
 >
     @include('layouts.sidebar-content', ['navItems' => $navItems, 'tenantId' => $tenantId, 'homeRoute' => $homeRoute, 'logoutRoute' => $logoutRoute, 'user' => $user, 'collapsible' => true])
-
-    <button
-        type="button"
-        class="absolute inset-y-0 -end-2 hidden w-4 cursor-ew-resize items-center justify-center text-zinc-400 transition hover:text-brand-700 app-focus lg:flex"
-        x-on:mousedown.prevent="startResize($event)"
-        x-on:dblclick.prevent="resetSidebarWidth()"
-        aria-label="{{ __('Resize sidebar') }}"
-        title="{{ __('Resize sidebar') }}"
-    >
-        <span class="grid h-12 w-3 place-items-center rounded-full border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-            <x-icon name="grip-vertical" class="h-4 w-4" />
-        </span>
-    </button>
 </aside>
 
 <nav class="fixed inset-x-0 bottom-0 z-30 border-t border-zinc-200 bg-white/95 px-2 py-2 shadow-[0_-12px_30px_rgba(15,23,42,0.08)] backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/95 lg:hidden" aria-label="{{ __('Mobile navigation') }}">

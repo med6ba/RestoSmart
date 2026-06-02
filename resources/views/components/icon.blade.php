@@ -55,6 +55,17 @@
             <path d="M8 17h8" />
             @break
 
+        @case('chevron-down')
+            <path d="m6 9 6 6 6-6" />
+            @break
+
+        @case('credit-card-check')
+            <path d="M12 19H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v6" />
+            <path d="M2 10h20" />
+            <circle cx="18" cy="18" r="5" />
+            <path d="m15.5 18 1.5 1.5 3-3" />
+            @break
+
         @case('clipboard-list')
             <path d="M9 3h6v4H9z" />
             <path d="M9 5H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3" />
@@ -84,6 +95,12 @@
             <path d="m3 11 9-8 9 8" />
             <path d="M5 10v10h14V10" />
             <path d="M9 20v-6h6v6" />
+            @break
+
+        @case('info')
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 16v-4" />
+            <path d="M12 8h.01" />
             @break
 
         @case('layout-dashboard')

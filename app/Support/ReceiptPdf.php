@@ -6,119 +6,185 @@ use App\Models\Order;
 
 class ReceiptPdf
 {
+    private const PAGE_WIDTH = 612;
+
+    private const PAGE_HEIGHT = 792;
+
     public static function make(Order $order): string
     {
         $order->loadMissing(['items', 'restaurantTable', 'driver']);
 
         $tenantName = function_exists('tenant') ? (string) tenant('name') : config('app.name', 'RestoSmart');
-        $lines = self::receiptLines($order, $tenantName);
-        $stream = self::contentStream($lines, $tenantName, $order->public_code);
 
-        return self::pdf($stream);
+        return self::pdf(self::contentStream($order, $tenantName));
     }
 
-    /**
-     * @return array<int, array{font: string, size: int, text: string, gap?: int}>
-     */
-    private static function receiptLines(Order $order, string $tenantName): array
+    private static function contentStream(Order $order, string $tenantName): string
     {
         $placedAt = ($order->placed_at ?? $order->created_at)?->format('Y-m-d H:i') ?? '';
+        $ops = [];
 
-        $lines = [
-            ['font' => 'F2', 'size' => 20, 'text' => 'ORDER RECEIPT', 'gap' => 22],
-            ['font' => 'F2', 'size' => 13, 'text' => $tenantName, 'gap' => 17],
-            ['font' => 'F1', 'size' => 10, 'text' => 'Receipt: '.$order->public_code, 'gap' => 13],
-            ['font' => 'F1', 'size' => 10, 'text' => 'Date: '.$placedAt, 'gap' => 13],
-            ['font' => 'F1', 'size' => 10, 'text' => 'Customer: '.$order->customer_name.' - '.$order->customer_phone, 'gap' => 13],
-            ['font' => 'F1', 'size' => 10, 'text' => 'Mode: '.$order->typeLabel(), 'gap' => 13],
-            ['font' => 'F1', 'size' => 1, 'text' => '---', 'gap' => 14],
-        ];
+        self::fillRect($ops, 0, 0, self::PAGE_WIDTH, self::PAGE_HEIGHT, '1 1 1');
+        self::fillRect($ops, 48, 704, 516, 56, '0.09 0.09 0.11');
+        self::text($ops, 'F2', 21, 64, 735, $tenantName, '1 1 1');
+        self::text($ops, 'F1', 10, 64, 718, 'Order receipt', '0.86 0.86 0.86');
+        self::textRight($ops, 'F2', 12, 548, 735, $order->public_code, '1 1 1');
+        self::textRight($ops, 'F1', 9, 548, 718, $placedAt, '0.86 0.86 0.86');
 
-        if ($order->type === 'local' && $order->restaurantTable) {
-            $lines[] = ['font' => 'F1', 'size' => 10, 'text' => 'Table: '.$order->restaurantTable->code, 'gap' => 13];
-        }
+        self::metaCard($ops, 48, 632, 154, 'Customer', $order->customer_name, $order->customer_phone ?: $order->customer_email);
+        self::metaCard($ops, 218, 632, 154, 'Order type', $order->typeLabel(), $order->restaurantTable ? 'Table '.$order->restaurantTable->code : ucfirst((string) $order->status));
+        self::metaCard($ops, 388, 632, 176, 'Payment', ucfirst((string) $order->payment_status), 'Total '.Money::mad($order->total_cents));
+
+        $detailY = 600;
 
         if ($order->type === 'delivery' && $order->delivery_address) {
-            foreach (self::wrap('Address: '.$order->delivery_address, 70) as $wrapped) {
-                $lines[] = ['font' => 'F1', 'size' => 10, 'text' => $wrapped, 'gap' => 13];
+            self::label($ops, 48, $detailY, 'Delivery address');
+            foreach (self::wrap($order->delivery_address, 92) as $line) {
+                $detailY -= 13;
+                self::text($ops, 'F1', 9, 48, $detailY, $line, '0.25 0.25 0.28');
             }
         }
 
         if ($order->kitchen_notes) {
-            foreach (self::wrap('Kitchen notes: '.$order->kitchen_notes, 70) as $wrapped) {
-                $lines[] = ['font' => 'F1', 'size' => 10, 'text' => $wrapped, 'gap' => 13];
+            $detailY -= 18;
+            self::label($ops, 48, $detailY, 'Kitchen notes');
+            foreach (self::wrap($order->kitchen_notes, 92) as $line) {
+                $detailY -= 13;
+                self::text($ops, 'F1', 9, 48, $detailY, $line, '0.25 0.25 0.28');
             }
+
+            $detailY -= 12;
         }
 
-        $lines[] = ['font' => 'F2', 'size' => 11, 'text' => 'Items', 'gap' => 15];
+        $tableHeaderBottom = min(536, $detailY - 28);
+        self::fillRect($ops, 48, $tableHeaderBottom, 516, 28, '0.95 0.95 0.96');
+        self::line($ops, 48, $tableHeaderBottom, 564, $tableHeaderBottom, '0.82 0.82 0.84');
+        self::line($ops, 48, $tableHeaderBottom + 28, 564, $tableHeaderBottom + 28, '0.82 0.82 0.84');
+        self::text($ops, 'F2', 9, 64, $tableHeaderBottom + 10, 'Item', '0.28 0.28 0.31');
+        self::textRight($ops, 'F2', 9, 390, $tableHeaderBottom + 10, 'Qty', '0.28 0.28 0.31');
+        self::textRight($ops, 'F2', 9, 464, $tableHeaderBottom + 10, 'Price', '0.28 0.28 0.31');
+        self::textRight($ops, 'F2', 9, 548, $tableHeaderBottom + 10, 'Total', '0.28 0.28 0.31');
 
-        foreach ($order->items as $item) {
-            $itemLine = $item->quantity.' x '.$item->name.' - '.Money::mad($item->total_price_cents);
+        $rowTop = $tableHeaderBottom;
+        $omitted = 0;
 
-            foreach (self::wrap($itemLine, 70) as $index => $wrapped) {
-                $lines[] = ['font' => $index === 0 ? 'F1' : 'F1', 'size' => 10, 'text' => $wrapped, 'gap' => 13];
-            }
+        foreach ($order->items as $index => $item) {
+            $nameLines = self::wrap($item->name, 38);
+            $noteLines = $item->notes ? self::wrap('Note: '.$item->notes, 54) : [];
+            $rowHeight = max(42, 24 + (count($nameLines) * 12) + (count($noteLines) * 10));
+            $rowBottom = $rowTop - $rowHeight;
 
-            if ($item->notes) {
-                foreach (self::wrap('  Note: '.$item->notes, 68) as $wrapped) {
-                    $lines[] = ['font' => 'F1', 'size' => 9, 'text' => $wrapped, 'gap' => 11];
-                }
-            }
-        }
+            if ($rowBottom < 154) {
+                $omitted++;
 
-        $lines[] = ['font' => 'F1', 'size' => 1, 'text' => '---', 'gap' => 14];
-        $lines[] = ['font' => 'F1', 'size' => 10, 'text' => 'Subtotal: '.Money::mad($order->subtotal_cents), 'gap' => 13];
-        $lines[] = ['font' => 'F1', 'size' => 10, 'text' => 'Delivery fee: '.Money::mad($order->delivery_fee_cents), 'gap' => 13];
-        $lines[] = ['font' => 'F2', 'size' => 13, 'text' => 'Total: '.Money::mad($order->total_cents), 'gap' => 18];
-        $lines[] = ['font' => 'F1', 'size' => 1, 'text' => '---', 'gap' => 14];
-        $lines[] = ['font' => 'F1', 'size' => 9, 'text' => 'Kitchen copy - print and attach to the ticket.', 'gap' => 12];
-
-        return $lines;
-    }
-
-    /**
-     * @param  array<int, array{font: string, size: int, text: string, gap?: int}>  $lines
-     */
-    private static function contentStream(array $lines, string $tenantName, string $publicCode): string
-    {
-        $operations = [
-            '0 0 0 rg',
-            '0 0 0 RG',
-            '1 w',
-            '54 64 504 664 re S',
-            '0.86 0.86 0.86 RG',
-            '54 692 m 558 692 l S',
-        ];
-
-        $y = 728;
-
-        foreach ($lines as $line) {
-            if ($y < 92) {
-                break;
-            }
-
-            if ($line['text'] === '---') {
-                $operations[] = '0.86 0.86 0.86 RG';
-                $operations[] = sprintf('64 %d m 548 %d l S', $y + 4, $y + 4);
-                $operations[] = '0 0 0 RG';
-                $y -= $line['gap'] ?? 13;
                 continue;
             }
 
-            $operations[] = sprintf(
-                'BT /%s %d Tf 1 0 0 1 64 %d Tm %s Tj ET',
-                $line['font'],
-                $line['size'],
-                $y,
-                self::text($line['text'])
-            );
+            if ($index % 2 === 1) {
+                self::fillRect($ops, 48, $rowBottom, 516, $rowHeight, '0.99 0.99 0.99');
+            }
 
-            $y -= $line['gap'] ?? 13;
+            $textY = $rowTop - 23;
+
+            foreach ($nameLines as $lineIndex => $line) {
+                self::text($ops, $lineIndex === 0 ? 'F2' : 'F1', 10, 64, $textY - ($lineIndex * 12), $line, '0.10 0.10 0.12');
+            }
+
+            $noteY = $textY - (count($nameLines) * 12) - 2;
+            foreach ($noteLines as $line) {
+                self::text($ops, 'F1', 8, 76, $noteY, $line, '0.45 0.45 0.48');
+                $noteY -= 10;
+            }
+
+            self::textRight($ops, 'F1', 10, 390, $textY, (string) $item->quantity, '0.20 0.20 0.22');
+            self::textRight($ops, 'F1', 10, 464, $textY, Money::mad($item->unit_price_cents), '0.20 0.20 0.22');
+            self::textRight($ops, 'F2', 10, 548, $textY, Money::mad($item->total_price_cents), '0.10 0.10 0.12');
+
+            self::line($ops, 48, $rowBottom, 564, $rowBottom, '0.90 0.90 0.91');
+            $rowTop = $rowBottom;
         }
 
-        $operations[] = sprintf('BT /F1 8 Tf 1 0 0 1 64 46 Tm %s Tj ET', self::text($tenantName.' - '.$publicCode));
+        if ($omitted > 0 && $rowTop > 164) {
+            self::text($ops, 'F1', 9, 64, $rowTop - 16, '+ '.$omitted.' additional item(s)', '0.45 0.45 0.48');
+            $rowTop -= 32;
+        }
 
-        return implode("\n", $operations)."\n";
+        $showDeliveryFee = $order->delivery_fee_cents > 0 || $order->type === 'delivery';
+        $totalsHeight = $showDeliveryFee ? 88 : 66;
+        $totalsY = max(76, $rowTop - ($totalsHeight + 18));
+        self::fillRect($ops, 336, $totalsY, 228, $totalsHeight, '0.97 0.97 0.98');
+        self::strokeRect($ops, 336, $totalsY, 228, $totalsHeight, '0.84 0.84 0.86');
+
+        if ($showDeliveryFee) {
+            self::text($ops, 'F1', 10, 352, $totalsY + 62, 'Subtotal', '0.35 0.35 0.38');
+            self::textRight($ops, 'F1', 10, 548, $totalsY + 62, Money::mad($order->subtotal_cents), '0.20 0.20 0.22');
+            self::text($ops, 'F1', 10, 352, $totalsY + 40, 'Delivery fee', '0.35 0.35 0.38');
+            self::textRight($ops, 'F1', 10, 548, $totalsY + 40, Money::mad($order->delivery_fee_cents), '0.20 0.20 0.22');
+            self::line($ops, 352, $totalsY + 28, 548, $totalsY + 28, '0.78 0.78 0.80');
+        } else {
+            self::text($ops, 'F1', 10, 352, $totalsY + 40, 'Subtotal', '0.35 0.35 0.38');
+            self::textRight($ops, 'F1', 10, 548, $totalsY + 40, Money::mad($order->subtotal_cents), '0.20 0.20 0.22');
+            self::line($ops, 352, $totalsY + 28, 548, $totalsY + 28, '0.78 0.78 0.80');
+        }
+
+        self::text($ops, 'F2', 12, 352, $totalsY + 12, 'Total', '0.09 0.09 0.11');
+        self::textRight($ops, 'F2', 12, 548, $totalsY + 12, Money::mad($order->total_cents), '0.09 0.09 0.11');
+
+        self::line($ops, 48, 50, 564, 50, '0.82 0.82 0.84');
+        self::text($ops, 'F1', 8, 48, 34, $tenantName.' - '.$order->public_code, '0.45 0.45 0.48');
+        self::textRight($ops, 'F1', 8, 564, 34, 'Generated '.now()->format('Y-m-d H:i'), '0.45 0.45 0.48');
+
+        return implode("\n", $ops)."\n";
+    }
+
+    private static function metaCard(array &$ops, int $x, int $y, int $width, string $label, string $primary, ?string $secondary = null): void
+    {
+        self::fillRect($ops, $x, $y, $width, 52, '0.98 0.98 0.98');
+        self::strokeRect($ops, $x, $y, $width, 52, '0.85 0.85 0.87');
+        self::label($ops, $x + 12, $y + 34, $label);
+        self::text($ops, 'F2', 10, $x + 12, $y + 20, self::limit($primary, 28), '0.11 0.11 0.13');
+
+        if ($secondary) {
+            self::text($ops, 'F1', 8, $x + 12, $y + 8, self::limit($secondary, 34), '0.42 0.42 0.45');
+        }
+    }
+
+    private static function label(array &$ops, int $x, int $y, string $text): void
+    {
+        self::text($ops, 'F2', 7, $x, $y, strtoupper($text), '0.45 0.45 0.48');
+    }
+
+    private static function fillRect(array &$ops, int $x, int $y, int $width, int $height, string $rgb): void
+    {
+        $ops[] = $rgb.' rg';
+        $ops[] = "{$x} {$y} {$width} {$height} re f";
+    }
+
+    private static function strokeRect(array &$ops, int $x, int $y, int $width, int $height, string $rgb): void
+    {
+        $ops[] = $rgb.' RG';
+        $ops[] = '1 w';
+        $ops[] = "{$x} {$y} {$width} {$height} re S";
+    }
+
+    private static function line(array &$ops, int $x1, int $y1, int $x2, int $y2, string $rgb): void
+    {
+        $ops[] = $rgb.' RG';
+        $ops[] = '1 w';
+        $ops[] = "{$x1} {$y1} m {$x2} {$y2} l S";
+    }
+
+    private static function text(array &$ops, string $font, int $size, int $x, int $y, string $text, string $rgb): void
+    {
+        $ops[] = $rgb.' rg';
+        $ops[] = sprintf('BT /%s %d Tf 1 0 0 1 %d %d Tm %s Tj ET', $font, $size, $x, $y, self::pdfText($text));
+    }
+
+    private static function textRight(array &$ops, string $font, int $size, int $rightX, int $y, string $text, string $rgb): void
+    {
+        $x = (int) ($rightX - self::estimatedWidth($text, $size, $font));
+
+        self::text($ops, $font, $size, $x, $y, $text, $rgb);
     }
 
     private static function pdf(string $stream): string
@@ -129,7 +195,7 @@ class ReceiptPdf
             '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>',
             '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
             '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>',
-            "<< /Length ".strlen($stream)." >>\nstream\n".$stream."endstream",
+            '<< /Length '.strlen($stream)." >>\nstream\n".$stream.'endstream',
         ];
 
         $pdf = "%PDF-1.4\n";
@@ -155,7 +221,7 @@ class ReceiptPdf
         return $pdf;
     }
 
-    private static function text(string $text): string
+    private static function pdfText(string $text): string
     {
         $text = preg_replace('/[[:cntrl:]]+/', ' ', $text) ?? $text;
         $converted = @iconv('UTF-8', 'Windows-1252//TRANSLIT//IGNORE', $text);
@@ -174,5 +240,17 @@ class ReceiptPdf
     private static function wrap(string $text, int $width): array
     {
         return explode("\n", wordwrap($text, $width, "\n", true));
+    }
+
+    private static function estimatedWidth(string $text, int $size, string $font): int
+    {
+        $factor = $font === 'F2' ? 0.62 : 0.56;
+
+        return (int) min(260, strlen($text) * $size * $factor);
+    }
+
+    private static function limit(string $text, int $width): string
+    {
+        return strlen($text) > $width ? substr($text, 0, max(0, $width - 3)).'...' : $text;
     }
 }

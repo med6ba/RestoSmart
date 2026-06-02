@@ -11,8 +11,8 @@ use App\Models\Notification;
 use App\Models\Order;
 use App\Models\Plan;
 use App\Models\PlatformNotification;
-use App\Models\RestaurantTable;
 use App\Models\RestaurantApplication;
+use App\Models\RestaurantTable;
 use App\Models\StockMovement;
 use App\Models\Subscription;
 use App\Models\Tenant;
@@ -22,56 +22,141 @@ use Illuminate\Support\Facades\Hash;
 
 class DemoTenantSeeder extends Seeder
 {
-    private const TENANT_ID = 'demo';
+    private const RESTAURANTS = [
+        [
+            'id' => 'demo',
+            'name' => 'Demo Restaurant',
+            'owner_name' => 'Demo Admin',
+            'owner_email' => 'admin@demo.com',
+            'phone' => '+1 555 0200',
+            'address' => '12 Demo Street',
+            'city' => 'Demo City',
+            'plan' => 'starter',
+            'order_prefix' => 'RS-DEMO',
+            'client_address' => '44 Client Avenue',
+            'office_address' => '91 Office Park',
+            'users' => [
+                'admin' => ['name' => 'Demo Admin', 'email' => 'admin@demo.com', 'phone' => '+1 555 0201'],
+                'kitchen' => ['name' => 'Demo Kitchen', 'email' => 'kitchen@demo.com', 'phone' => '+1 555 0202'],
+                'driver' => ['name' => 'Demo Driver', 'email' => 'driver@demo.com', 'phone' => '+1 555 0203'],
+                'client' => ['name' => 'Demo Client', 'email' => 'client@demo.com', 'phone' => '+1 555 0204'],
+            ],
+        ],
+        [
+            'id' => 'medina',
+            'name' => 'Medina Bistro',
+            'owner_name' => 'Salma El Idrissi',
+            'owner_email' => 'admin@medina.test',
+            'phone' => '+212 600 100 010',
+            'address' => '18 Rue Riad Zitoun, Marrakech',
+            'city' => 'Marrakech',
+            'plan' => 'pro',
+            'order_prefix' => 'RS-MED',
+            'client_address' => '7 Avenue Mohammed V',
+            'office_address' => '22 Gueliz Business Center',
+            'users' => [
+                'admin' => ['name' => 'Salma El Idrissi', 'email' => 'admin@medina.test', 'phone' => '+212 600 100 011'],
+                'kitchen' => ['name' => 'Youssef Kitchen', 'email' => 'kitchen@medina.test', 'phone' => '+212 600 100 012'],
+                'driver' => ['name' => 'Hamza Delivery', 'email' => 'driver@medina.test', 'phone' => '+212 600 100 013'],
+                'client' => ['name' => 'Nadia Client', 'email' => 'client@medina.test', 'phone' => '+212 600 100 014'],
+            ],
+        ],
+        [
+            'id' => 'atlas',
+            'name' => 'Atlas Kitchen',
+            'owner_name' => 'Amine Berrada',
+            'owner_email' => 'admin@atlas.test',
+            'phone' => '+212 600 200 020',
+            'address' => '4 Boulevard Zerktouni, Casablanca',
+            'city' => 'Casablanca',
+            'plan' => 'business',
+            'order_prefix' => 'RS-ATL',
+            'client_address' => '35 Maarif Residence',
+            'office_address' => '10 Casa Finance City',
+            'users' => [
+                'admin' => ['name' => 'Amine Berrada', 'email' => 'admin@atlas.test', 'phone' => '+212 600 200 021'],
+                'kitchen' => ['name' => 'Meryem Kitchen', 'email' => 'kitchen@atlas.test', 'phone' => '+212 600 200 022'],
+                'driver' => ['name' => 'Omar Delivery', 'email' => 'driver@atlas.test', 'phone' => '+212 600 200 023'],
+                'client' => ['name' => 'Karim Client', 'email' => 'client@atlas.test', 'phone' => '+212 600 200 024'],
+            ],
+        ],
+        [
+            'id' => 'ocean',
+            'name' => 'Ocean Grill',
+            'owner_name' => 'Imane Lahbabi',
+            'owner_email' => 'admin@ocean.test',
+            'phone' => '+212 600 300 030',
+            'address' => '2 Corniche Road, Agadir',
+            'city' => 'Agadir',
+            'plan' => 'pro',
+            'order_prefix' => 'RS-OCN',
+            'client_address' => '16 Marina Residence',
+            'office_address' => '5 Agadir Bay Offices',
+            'users' => [
+                'admin' => ['name' => 'Imane Lahbabi', 'email' => 'admin@ocean.test', 'phone' => '+212 600 300 031'],
+                'kitchen' => ['name' => 'Rachid Kitchen', 'email' => 'kitchen@ocean.test', 'phone' => '+212 600 300 032'],
+                'driver' => ['name' => 'Said Delivery', 'email' => 'driver@ocean.test', 'phone' => '+212 600 300 033'],
+                'client' => ['name' => 'Leila Client', 'email' => 'client@ocean.test', 'phone' => '+212 600 300 034'],
+            ],
+        ],
+    ];
 
     public function run(): void
     {
-        $plan = Plan::query()->where('slug', 'starter')->firstOrFail();
-        $tenant = $this->seedTenant($plan);
+        foreach (self::RESTAURANTS as $restaurant) {
+            $plan = Plan::query()->where('slug', $restaurant['plan'])->firstOrFail();
+            $tenant = $this->seedTenant($plan, $restaurant);
 
-        $this->seedPlatformRecords($tenant, $plan);
+            $this->seedPlatformRecords($tenant, $plan, $restaurant);
 
-        $tenant->run(function () {
-            $users = $this->seedUsers();
-            $items = $this->seedMenu();
-            $tables = $this->seedTables();
-            $this->seedAddresses($users);
-            $this->seedOrders($users, $items, $tables);
-            $this->seedNotifications($users);
-        });
+            $tenant->run(function () use ($restaurant) {
+                $users = $this->seedUsers($restaurant);
+                $items = $this->seedMenu();
+                $tables = $this->seedTables($restaurant);
+                $this->seedAddresses($users, $restaurant);
+                $this->seedOrders($users, $items, $tables, $restaurant);
+                $this->seedNotifications($users, $restaurant);
+            });
+        }
     }
 
-    private function seedTenant(Plan $plan): Tenant
+    /**
+     * @param  array<string, mixed>  $restaurant
+     */
+    private function seedTenant(Plan $plan, array $restaurant): Tenant
     {
         return Tenant::query()->updateOrCreate(
-            ['id' => self::TENANT_ID],
+            ['id' => $restaurant['id']],
             [
-                'name' => 'Demo Restaurant',
-                'slug' => self::TENANT_ID,
-                'owner_email' => 'admin@demo.com',
-                'phone' => '+1 555 0200',
-                'address' => '12 Demo Street',
+                'name' => $restaurant['name'],
+                'slug' => $restaurant['id'],
+                'owner_email' => $restaurant['owner_email'],
+                'phone' => $restaurant['phone'],
+                'address' => $restaurant['address'],
                 'status' => 'trial',
                 'trial_ends_at' => now()->addDays(30),
                 'current_period_ends_at' => now()->addDays(30),
                 'plan_id' => $plan->id,
                 'data' => [
-                    'local_url' => '/'.self::TENANT_ID,
+                    'local_url' => '/'.$restaurant['id'],
                 ],
             ],
         );
     }
 
-    private function seedPlatformRecords(Tenant $tenant, Plan $plan): void
+    /**
+     * @param  array<string, mixed>  $restaurant
+     */
+    private function seedPlatformRecords(Tenant $tenant, Plan $plan, array $restaurant): void
     {
         RestaurantApplication::query()->updateOrCreate(
-            ['desired_slug' => self::TENANT_ID],
+            ['desired_slug' => $restaurant['id']],
             [
-                'restaurant_name' => 'Demo Restaurant',
-                'owner_name' => 'Demo Admin',
-                'owner_email' => 'admin@demo.com',
-                'phone' => '+1 555 0200',
-                'address' => '12 Demo Street',
+                'restaurant_name' => $restaurant['name'],
+                'owner_name' => $restaurant['owner_name'],
+                'owner_email' => $restaurant['owner_email'],
+                'phone' => $restaurant['phone'],
+                'address' => $restaurant['address'],
                 'plan_id' => $plan->id,
                 'status' => 'approved',
                 'tenant_id' => $tenant->id,
@@ -105,42 +190,45 @@ class DemoTenantSeeder extends Seeder
             ['tenant_id' => $tenant->id, 'type' => 'tenant_approved'],
             [
                 'title' => 'Restaurant approved',
-                'body' => 'Demo Restaurant is ready at /demo',
+                'body' => $restaurant['name'].' is ready at /'.$restaurant['id'],
             ],
         );
     }
 
     /**
+     * @param  array<string, mixed>  $restaurant
      * @return array<string, User>
      */
-    private function seedUsers(): array
+    private function seedUsers(array $restaurant): array
     {
+        $users = $restaurant['users'];
+
         return [
-            'admin' => $this->user('admin@demo.com', [
-                'name' => 'Demo Admin',
-                'phone' => '+1 555 0201',
+            'admin' => $this->user($users['admin']['email'], [
+                'name' => $users['admin']['name'],
+                'phone' => $users['admin']['phone'],
                 'role' => 'admin',
                 'available' => false,
-                'default_address' => '12 Demo Street',
+                'default_address' => $restaurant['address'],
             ]),
-            'kitchen' => $this->user('kitchen@demo.com', [
-                'name' => 'Demo Kitchen',
-                'phone' => '+1 555 0202',
+            'kitchen' => $this->user($users['kitchen']['email'], [
+                'name' => $users['kitchen']['name'],
+                'phone' => $users['kitchen']['phone'],
                 'role' => 'kitchen',
                 'available' => false,
             ]),
-            'driver' => $this->user('driver@demo.com', [
-                'name' => 'Demo Driver',
-                'phone' => '+1 555 0203',
+            'driver' => $this->user($users['driver']['email'], [
+                'name' => $users['driver']['name'],
+                'phone' => $users['driver']['phone'],
                 'role' => 'driver',
                 'available' => true,
             ]),
-            'client' => $this->user('client@demo.com', [
-                'name' => 'Demo Client',
-                'phone' => '+1 555 0204',
+            'client' => $this->user($users['client']['email'], [
+                'name' => $users['client']['name'],
+                'phone' => $users['client']['phone'],
                 'role' => 'client',
                 'available' => false,
-                'default_address' => '44 Client Avenue',
+                'default_address' => $restaurant['client_address'],
             ]),
         ];
     }
@@ -181,23 +269,23 @@ class DemoTenantSeeder extends Seeder
         $items = [
             'chicken_bowl' => MenuItem::query()->updateOrCreate(
                 ['name' => 'Harissa Chicken Bowl'],
-                ['category_id' => $categories['bowls']->id, 'description' => 'Grilled chicken, rice, herbs, and mild harissa.', 'price_cents' => 1290, 'prep_minutes' => 14, 'is_active' => true, 'stock_tracked' => true],
+                ['category_id' => $categories['bowls']->id, 'description' => 'Grilled chicken, rice, herbs, and mild harissa.', 'price_cents' => 1290, 'prep_minutes' => 14, 'is_active' => true, 'stock_tracked' => true, 'image_url' => '/images/dishes/harissa-chicken-bowl.png'],
             ),
             'veggie_bowl' => MenuItem::query()->updateOrCreate(
                 ['name' => 'Market Veggie Bowl'],
-                ['category_id' => $categories['bowls']->id, 'description' => 'Roasted vegetables with rice and tahini sauce.', 'price_cents' => 1090, 'prep_minutes' => 11, 'is_active' => true, 'stock_tracked' => true],
+                ['category_id' => $categories['bowls']->id, 'description' => 'Roasted vegetables with rice and tahini sauce.', 'price_cents' => 1090, 'prep_minutes' => 11, 'is_active' => true, 'stock_tracked' => true, 'image_url' => '/images/dishes/market-veggie-bowl.png'],
             ),
             'kofta_wrap' => MenuItem::query()->updateOrCreate(
                 ['name' => 'Lamb Kofta Wrap'],
-                ['category_id' => $categories['grill']->id, 'description' => 'Kofta, pickles, herbs, yogurt, and flatbread.', 'price_cents' => 1180, 'prep_minutes' => 12, 'is_active' => true, 'stock_tracked' => true],
+                ['category_id' => $categories['grill']->id, 'description' => 'Kofta, pickles, herbs, yogurt, and flatbread.', 'price_cents' => 1180, 'prep_minutes' => 12, 'is_active' => true, 'stock_tracked' => true, 'image_url' => '/images/dishes/lamb-kofta-wrap.png'],
             ),
             'mint_tea' => MenuItem::query()->updateOrCreate(
                 ['name' => 'Iced Mint Tea'],
-                ['category_id' => $categories['drinks']->id, 'description' => 'Fresh mint tea over ice.', 'price_cents' => 350, 'prep_minutes' => 2, 'is_active' => true, 'stock_tracked' => true],
+                ['category_id' => $categories['drinks']->id, 'description' => 'Fresh mint tea over ice.', 'price_cents' => 350, 'prep_minutes' => 2, 'is_active' => true, 'stock_tracked' => true, 'image_url' => '/images/dishes/iced-mint-tea.png'],
             ),
             'date_cake' => MenuItem::query()->updateOrCreate(
                 ['name' => 'Date Orange Cake'],
-                ['category_id' => $categories['drinks']->id, 'description' => 'Date cake with orange syrup.', 'price_cents' => 520, 'prep_minutes' => 4, 'is_active' => true, 'stock_tracked' => true],
+                ['category_id' => $categories['drinks']->id, 'description' => 'Date cake with orange syrup.', 'price_cents' => 520, 'prep_minutes' => 4, 'is_active' => true, 'stock_tracked' => true, 'image_url' => '/images/dishes/date-orange-cake.png'],
             ),
         ];
 
@@ -271,14 +359,15 @@ class DemoTenantSeeder extends Seeder
 
     /**
      * @param  array<string, User>  $users
+     * @param  array<string, mixed>  $restaurant
      */
-    private function seedAddresses(array $users): void
+    private function seedAddresses(array $users, array $restaurant): void
     {
         CustomerAddress::query()->updateOrCreate(
             ['user_id' => $users['client']->id, 'label' => 'Home'],
             [
-                'address' => '44 Client Avenue',
-                'city' => 'Demo City',
+                'address' => $restaurant['client_address'],
+                'city' => $restaurant['city'],
                 'phone' => $users['client']->phone,
                 'instructions' => 'Ring the bell.',
             ],
@@ -287,8 +376,8 @@ class DemoTenantSeeder extends Seeder
         CustomerAddress::query()->updateOrCreate(
             ['user_id' => $users['client']->id, 'label' => 'Office'],
             [
-                'address' => '91 Office Park',
-                'city' => 'Demo City',
+                'address' => $restaurant['office_address'],
+                'city' => $restaurant['city'],
                 'phone' => $users['client']->phone,
                 'instructions' => 'Leave at reception.',
             ],
@@ -296,9 +385,10 @@ class DemoTenantSeeder extends Seeder
     }
 
     /**
+     * @param  array<string, mixed>  $restaurant
      * @return array<string, RestaurantTable>
      */
-    private function seedTables(): array
+    private function seedTables(array $restaurant): array
     {
         $tables = [];
 
@@ -308,7 +398,7 @@ class DemoTenantSeeder extends Seeder
             $tables[$code] = RestaurantTable::query()->updateOrCreate(
                 ['code' => $code],
                 [
-                    'qr_token' => 'DEMO-TABLE-'.$code,
+                    'qr_token' => strtoupper($restaurant['id']).'-TABLE-'.$code,
                     'sort_order' => $i,
                     'is_active' => true,
                 ],
@@ -322,10 +412,13 @@ class DemoTenantSeeder extends Seeder
      * @param  array<string, User>  $users
      * @param  array<string, MenuItem>  $items
      * @param  array<string, RestaurantTable>  $tables
+     * @param  array<string, mixed>  $restaurant
      */
-    private function seedOrders(array $users, array $items, array $tables): void
+    private function seedOrders(array $users, array $items, array $tables, array $restaurant): void
     {
-        $this->order('RS-DEMO-1000', $users['client'], null, [
+        $prefix = $restaurant['order_prefix'];
+
+        $this->order($prefix.'-1000', $users['client'], null, [
             [$items['veggie_bowl'], 1, null],
             [$items['mint_tea'], 1, null],
         ], [
@@ -338,19 +431,19 @@ class DemoTenantSeeder extends Seeder
             'placed_at' => now()->subMinutes(7),
         ]);
 
-        $this->order('RS-DEMO-1001', $users['client'], null, [
+        $this->order($prefix.'-1001', $users['client'], null, [
             [$items['chicken_bowl'], 1, null],
             [$items['mint_tea'], 1, null],
         ], [
             'type' => 'delivery',
             'status' => 'received',
             'payment_status' => 'pending',
-            'delivery_address' => '44 Client Avenue',
+            'delivery_address' => $restaurant['client_address'],
             'kitchen_notes' => 'Sauce on the side.',
             'placed_at' => now()->subMinutes(18),
         ]);
 
-        $this->order('RS-DEMO-1002', $users['client'], null, [
+        $this->order($prefix.'-1002', $users['client'], null, [
             [$items['kofta_wrap'], 2, 'Extra pickles'],
         ], [
             'type' => 'takeaway',
@@ -361,27 +454,27 @@ class DemoTenantSeeder extends Seeder
             'placed_at' => now()->subMinutes(25),
         ]);
 
-        $this->order('RS-DEMO-1003', $users['client'], null, [
+        $this->order($prefix.'-1003', $users['client'], null, [
             [$items['veggie_bowl'], 1, 'No tahini'],
             [$items['mint_tea'], 2, null],
         ], [
             'type' => 'delivery',
             'status' => 'ready',
             'payment_status' => 'pending',
-            'delivery_address' => '91 Office Park',
+            'delivery_address' => $restaurant['office_address'],
             'kitchen_notes' => null,
             'placed_at' => now()->subMinutes(32),
             'ready_at' => now()->subMinutes(4),
         ]);
 
-        $this->order('RS-DEMO-1004', $users['client'], $users['driver'], [
+        $this->order($prefix.'-1004', $users['client'], $users['driver'], [
             [$items['date_cake'], 2, null],
             [$items['mint_tea'], 1, null],
         ], [
             'type' => 'delivery',
             'status' => 'out_for_delivery',
             'payment_status' => 'pending',
-            'delivery_address' => '44 Client Avenue',
+            'delivery_address' => $restaurant['client_address'],
             'kitchen_notes' => null,
             'placed_at' => now()->subMinutes(58),
             'ready_at' => now()->subMinutes(22),
@@ -476,27 +569,30 @@ class DemoTenantSeeder extends Seeder
 
     /**
      * @param  array<string, User>  $users
+     * @param  array<string, mixed>  $restaurant
      */
-    private function seedNotifications(array $users): void
+    private function seedNotifications(array $users, array $restaurant): void
     {
+        $prefix = $restaurant['order_prefix'];
+
         Notification::query()->updateOrCreate(
             ['role' => 'admin', 'type' => 'low_stock', 'title' => 'Low stock: Market vegetables'],
             ['body' => 'Current stock is below the configured threshold.'],
         );
 
         Notification::query()->updateOrCreate(
-            ['role' => 'kitchen', 'type' => 'new_order', 'title' => 'New order RS-DEMO-1001'],
+            ['role' => 'kitchen', 'type' => 'new_order', 'title' => 'New order '.$prefix.'-1001'],
             ['body' => 'A delivery order is waiting for preparation.'],
         );
 
         Notification::query()->updateOrCreate(
             ['role' => 'driver', 'type' => 'delivery_ready', 'title' => 'Delivery ready'],
-            ['body' => 'RS-DEMO-1003 is ready for dispatch.'],
+            ['body' => $prefix.'-1003 is ready for dispatch.'],
         );
 
         Notification::query()->updateOrCreate(
             ['user_id' => $users['client']->id, 'type' => 'order_update', 'title' => 'Order ready'],
-            ['body' => 'RS-DEMO-1003 is ready.'],
+            ['body' => $prefix.'-1003 is ready.'],
         );
     }
 }

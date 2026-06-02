@@ -55,8 +55,10 @@
             <x-input-error :messages="$errors->get('address')" class="mt-2" />
         </div>
 
-        <div class="flex items-center justify-between">
-            <a href="{{ route('home') }}" class="text-sm text-stone-600 hover:text-stone-950">{{ __('Back') }}</a>
+        <div class="flex items-center justify-end gap-3">
+            @guest
+                <a href="{{ route('home') }}" class="me-auto text-sm text-stone-600 hover:text-stone-950">{{ __('Back') }}</a>
+            @endguest
             <x-primary-button class="gap-2">
                 <x-icon name="building-store" class="h-4 w-4" />
                 {{ __('Submit application') }}
