@@ -27,18 +27,18 @@ class ReceiptPdf
         self::fillRect($ops, 0, 0, self::PAGE_WIDTH, self::PAGE_HEIGHT, '1 1 1');
         self::fillRect($ops, 48, 704, 516, 56, '0.09 0.09 0.11');
         self::text($ops, 'F2', 21, 64, 735, $tenantName, '1 1 1');
-        self::text($ops, 'F1', 10, 64, 718, 'Order receipt', '0.86 0.86 0.86');
+        self::text($ops, 'F1', 10, 64, 718, __('Order receipt'), '0.86 0.86 0.86');
         self::textRight($ops, 'F2', 12, 548, 735, $order->public_code, '1 1 1');
         self::textRight($ops, 'F1', 9, 548, 718, $placedAt, '0.86 0.86 0.86');
 
-        self::metaCard($ops, 48, 632, 154, 'Customer', $order->customer_name, $order->customer_phone ?: $order->customer_email);
-        self::metaCard($ops, 218, 632, 154, 'Order type', $order->typeLabel(), $order->restaurantTable ? 'Table '.$order->restaurantTable->code : ucfirst((string) $order->status));
-        self::metaCard($ops, 388, 632, 176, 'Payment', ucfirst((string) $order->payment_status), 'Total '.Money::mad($order->total_cents));
+        self::metaCard($ops, 48, 632, 154, __('Customer'), $order->customer_name, $order->customer_phone ?: $order->customer_email);
+        self::metaCard($ops, 218, 632, 154, __('Order type'), $order->typeLabel(), $order->restaurantTable ? __('Table').' '.$order->restaurantTable->code : __(ucfirst((string) $order->status)));
+        self::metaCard($ops, 388, 632, 176, __('Payment'), __(ucfirst((string) $order->payment_status)), __('Total').' '.Money::mad($order->total_cents));
 
         $detailY = 600;
 
         if ($order->type === 'delivery' && $order->delivery_address) {
-            self::label($ops, 48, $detailY, 'Delivery address');
+            self::label($ops, 48, $detailY, __('Delivery address'));
             foreach (self::wrap($order->delivery_address, 92) as $line) {
                 $detailY -= 13;
                 self::text($ops, 'F1', 9, 48, $detailY, $line, '0.25 0.25 0.28');
@@ -47,7 +47,7 @@ class ReceiptPdf
 
         if ($order->kitchen_notes) {
             $detailY -= 18;
-            self::label($ops, 48, $detailY, 'Kitchen notes');
+            self::label($ops, 48, $detailY, __('Kitchen notes'));
             foreach (self::wrap($order->kitchen_notes, 92) as $line) {
                 $detailY -= 13;
                 self::text($ops, 'F1', 9, 48, $detailY, $line, '0.25 0.25 0.28');
@@ -60,17 +60,17 @@ class ReceiptPdf
         self::fillRect($ops, 48, $tableHeaderBottom, 516, 28, '0.95 0.95 0.96');
         self::line($ops, 48, $tableHeaderBottom, 564, $tableHeaderBottom, '0.82 0.82 0.84');
         self::line($ops, 48, $tableHeaderBottom + 28, 564, $tableHeaderBottom + 28, '0.82 0.82 0.84');
-        self::text($ops, 'F2', 9, 64, $tableHeaderBottom + 10, 'Item', '0.28 0.28 0.31');
-        self::textRight($ops, 'F2', 9, 390, $tableHeaderBottom + 10, 'Qty', '0.28 0.28 0.31');
-        self::textRight($ops, 'F2', 9, 464, $tableHeaderBottom + 10, 'Price', '0.28 0.28 0.31');
-        self::textRight($ops, 'F2', 9, 548, $tableHeaderBottom + 10, 'Total', '0.28 0.28 0.31');
+        self::text($ops, 'F2', 9, 64, $tableHeaderBottom + 10, __('Item'), '0.28 0.28 0.31');
+        self::textRight($ops, 'F2', 9, 390, $tableHeaderBottom + 10, __('Qty'), '0.28 0.28 0.31');
+        self::textRight($ops, 'F2', 9, 464, $tableHeaderBottom + 10, __('Price'), '0.28 0.28 0.31');
+        self::textRight($ops, 'F2', 9, 548, $tableHeaderBottom + 10, __('Total'), '0.28 0.28 0.31');
 
         $rowTop = $tableHeaderBottom;
         $omitted = 0;
 
         foreach ($order->items as $index => $item) {
             $nameLines = self::wrap($item->name, 38);
-            $noteLines = $item->notes ? self::wrap('Note: '.$item->notes, 54) : [];
+            $noteLines = $item->notes ? self::wrap(__('Note: :note', ['note' => $item->notes]), 54) : [];
             $rowHeight = max(42, 24 + (count($nameLines) * 12) + (count($noteLines) * 10));
             $rowBottom = $rowTop - $rowHeight;
 
@@ -105,7 +105,7 @@ class ReceiptPdf
         }
 
         if ($omitted > 0 && $rowTop > 164) {
-            self::text($ops, 'F1', 9, 64, $rowTop - 16, '+ '.$omitted.' additional item(s)', '0.45 0.45 0.48');
+            self::text($ops, 'F1', 9, 64, $rowTop - 16, trans_choice(':count additional item|:count additional items', $omitted, ['count' => '+ '.$omitted]), '0.45 0.45 0.48');
             $rowTop -= 32;
         }
 
@@ -116,23 +116,23 @@ class ReceiptPdf
         self::strokeRect($ops, 336, $totalsY, 228, $totalsHeight, '0.84 0.84 0.86');
 
         if ($showDeliveryFee) {
-            self::text($ops, 'F1', 10, 352, $totalsY + 62, 'Subtotal', '0.35 0.35 0.38');
+            self::text($ops, 'F1', 10, 352, $totalsY + 62, __('Subtotal'), '0.35 0.35 0.38');
             self::textRight($ops, 'F1', 10, 548, $totalsY + 62, Money::mad($order->subtotal_cents), '0.20 0.20 0.22');
-            self::text($ops, 'F1', 10, 352, $totalsY + 40, 'Delivery fee', '0.35 0.35 0.38');
+            self::text($ops, 'F1', 10, 352, $totalsY + 40, __('Delivery fee'), '0.35 0.35 0.38');
             self::textRight($ops, 'F1', 10, 548, $totalsY + 40, Money::mad($order->delivery_fee_cents), '0.20 0.20 0.22');
             self::line($ops, 352, $totalsY + 28, 548, $totalsY + 28, '0.78 0.78 0.80');
         } else {
-            self::text($ops, 'F1', 10, 352, $totalsY + 40, 'Subtotal', '0.35 0.35 0.38');
+            self::text($ops, 'F1', 10, 352, $totalsY + 40, __('Subtotal'), '0.35 0.35 0.38');
             self::textRight($ops, 'F1', 10, 548, $totalsY + 40, Money::mad($order->subtotal_cents), '0.20 0.20 0.22');
             self::line($ops, 352, $totalsY + 28, 548, $totalsY + 28, '0.78 0.78 0.80');
         }
 
-        self::text($ops, 'F2', 12, 352, $totalsY + 12, 'Total', '0.09 0.09 0.11');
+        self::text($ops, 'F2', 12, 352, $totalsY + 12, __('Total'), '0.09 0.09 0.11');
         self::textRight($ops, 'F2', 12, 548, $totalsY + 12, Money::mad($order->total_cents), '0.09 0.09 0.11');
 
         self::line($ops, 48, 50, 564, 50, '0.82 0.82 0.84');
         self::text($ops, 'F1', 8, 48, 34, $tenantName.' - '.$order->public_code, '0.45 0.45 0.48');
-        self::textRight($ops, 'F1', 8, 564, 34, 'Generated '.now()->format('Y-m-d H:i'), '0.45 0.45 0.48');
+        self::textRight($ops, 'F1', 8, 564, 34, __('Generated :date', ['date' => now()->format('Y-m-d H:i')]), '0.45 0.45 0.48');
 
         return implode("\n", $ops)."\n";
     }

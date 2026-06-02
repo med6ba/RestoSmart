@@ -87,6 +87,16 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
+    public function deliveryMessages(): HasMany
+    {
+        return $this->hasMany(DeliveryMessage::class);
+    }
+
+    public function latestDeliveryMessage(): HasOne
+    {
+        return $this->hasOne(DeliveryMessage::class)->latestOfMany();
+    }
+
     public function delivery(): HasOne
     {
         return $this->hasOne(Delivery::class);

@@ -26,22 +26,22 @@ class KitchenController extends Controller
     {
         $workflow->markPreparing($order);
 
-        return back()->with('status', $order->public_code.' is now in preparation.');
+        return back()->with('status', __(':code is now in preparation.', ['code' => $order->public_code]));
     }
 
     public function ready(Order $order, OrderWorkflowService $workflow): RedirectResponse
     {
         $workflow->markReady($order);
 
-        return back()->with('status', $order->public_code.' marked ready.');
+        return back()->with('status', __(':code marked ready.', ['code' => $order->public_code]));
     }
 
     public function collected(Order $order, OrderWorkflowService $workflow): RedirectResponse
     {
-        abort_unless(in_array($order->type, ['takeaway', 'click_collect'], true) && $order->status === 'ready', 422);
+        abort_unless(in_array($order->type, ['local', 'takeaway', 'click_collect'], true) && $order->status === 'ready', 422);
 
         $workflow->markCollected($order);
 
-        return back()->with('status', $order->public_code.' marked collected.');
+        return back()->with('status', __(':code marked collected.', ['code' => $order->public_code]));
     }
 }

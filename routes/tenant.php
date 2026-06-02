@@ -9,6 +9,7 @@ use App\Http\Controllers\Tenant\AuthController;
 use App\Http\Controllers\Tenant\CartController;
 use App\Http\Controllers\Tenant\CheckoutController;
 use App\Http\Controllers\Tenant\DashboardController;
+use App\Http\Controllers\Tenant\DeliveryChatController;
 use App\Http\Controllers\Tenant\DriverController;
 use App\Http\Controllers\Tenant\KitchenController;
 use App\Http\Controllers\Tenant\MenuController;
@@ -63,6 +64,9 @@ Route::prefix('{tenant}')
                 Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
                 Route::get('/checkout/table-qr', [CheckoutController::class, 'validateTable'])->name('checkout.table-qr');
                 Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+                Route::get('/client/delivery-chat', [DeliveryChatController::class, 'index'])->name('client.delivery-chat.index');
+                Route::get('/client/delivery-chat/{order}', [DeliveryChatController::class, 'show'])->name('client.delivery-chat.show');
+                Route::post('/client/delivery-chat/{order}/send', [DeliveryChatController::class, 'send'])->name('client.delivery-chat.send');
             });
 
             Route::middleware('role:kitchen')->group(function () {
@@ -76,6 +80,9 @@ Route::prefix('{tenant}')
                 Route::get('/driver', [DriverController::class, 'index'])->name('driver');
                 Route::post('/driver/orders/{order}/pickup', [DriverController::class, 'pickup'])->name('driver.pickup');
                 Route::post('/driver/orders/{order}/deliver', [DriverController::class, 'deliver'])->name('driver.deliver');
+                Route::get('/driver/delivery-chat', [DeliveryChatController::class, 'index'])->name('driver.delivery-chat.index');
+                Route::get('/driver/delivery-chat/{order}', [DeliveryChatController::class, 'show'])->name('driver.delivery-chat.show');
+                Route::post('/driver/delivery-chat/{order}/send', [DeliveryChatController::class, 'send'])->name('driver.delivery-chat.send');
             });
 
             Route::middleware('role:admin')->group(function () {

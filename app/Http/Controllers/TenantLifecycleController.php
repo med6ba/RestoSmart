@@ -30,6 +30,6 @@ class TenantLifecycleController extends Controller
             'current_period_ends_at' => $tenant->current_period_ends_at,
         ]);
 
-        return back()->with('status', 'Tenant lifecycle updated.');
+        return back()->with('status', __('Tenant lifecycle updated.'));
     }
 }

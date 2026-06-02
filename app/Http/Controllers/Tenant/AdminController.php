@@ -44,7 +44,7 @@ class AdminController extends Controller
             'categories' => Category::query()->with('menuItems')->orderBy('sort_order')->get(),
             'ingredients' => Ingredient::query()->orderBy('name')->get(),
             'notifications' => Notification::query()->where('role', 'admin')->latest()->limit(8)->get(),
-            'tables' => RestaurantTable::query()->where('is_active', true)->orderBy('sort_order')->get(),
+            'tables' => RestaurantTable::query()->with('occupiedOrder')->where('is_active', true)->orderBy('sort_order')->get(),
             'tableCount' => RestaurantTable::query()->where('is_active', true)->count(),
         ]);
     }
@@ -102,7 +102,7 @@ class AdminController extends Controller
             'category' => ['id' => $category->id, 'name' => $category->name],
         ]);
 
-        return back()->with('status', 'Category created.');
+        return back()->with('status', __('Category created.'));
     }
 
     public function storeMenuItem(StoreMenuItemRequest $request): RedirectResponse
@@ -146,7 +146,7 @@ class AdminController extends Controller
             'dish' => ['id' => $menuItem->id, 'name' => $menuItem->name],
         ]);
 
-        return back()->with('status', 'Menu item created.');
+        return back()->with('status', __('Menu item created.'));
     }
 
     public function adjustStock(StockAdjustmentRequest $request): RedirectResponse
@@ -160,14 +160,14 @@ class AdminController extends Controller
             'ingredient_id' => $ingredient->id,
             'type' => $quantity > 0 ? 'restock' : 'adjustment',
             'quantity' => $quantity,
-            'note' => $request->input('note') ?: 'Manual stock adjustment',
+            'note' => $request->input('note') ?: __('Manual stock adjustment'),
         ]);
 
         $this->broadcastTenantUpdate(['admin', 'kitchen'], 'stock', 'stock.adjusted', __('Stock adjusted for :name.', ['name' => $ingredient->name]), [
             'ingredient' => ['id' => $ingredient->id, 'name' => $ingredient->name],
         ]);
 
-        return back()->with('status', 'Stock adjusted.');
+        return back()->with('status', __('Stock adjusted.'));
     }
 
     public function inviteStaff(InviteStaffRequest $request): RedirectResponse
@@ -186,7 +186,7 @@ class AdminController extends Controller
             'staff' => ['id' => $staff->id, 'name' => $staff->name, 'role' => $staff->role],
         ]);
 
-        return back()->with('status', 'Staff account created.');
+        return back()->with('status', __('Staff account created.'));
     }
 
     public function assign(Request $request, Order $order, OrderWorkflowService $workflow): RedirectResponse
@@ -200,7 +200,7 @@ class AdminController extends Controller
         $driver = User::query()->where('role', 'driver')->findOrFail($data['driver_id']);
         $workflow->assignDriver($order, $driver);
 
-        return back()->with('status', $order->public_code.' assigned to '.$driver->name.'.');
+        return back()->with('status', __(':code assigned to :driver.', ['code' => $order->public_code, 'driver' => $driver->name]));
     }
 
     private function uniqueTableToken(): string

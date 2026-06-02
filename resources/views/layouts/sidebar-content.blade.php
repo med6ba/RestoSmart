@@ -106,13 +106,13 @@
     <div class="shrink-0 space-y-3 p-4" x-bind:class="{{ $collapsible ? "collapsed ? 'p-3' : ''" : "''" }}">
         @if ($collapsible)
             <!-- Collapse Button -->
-            <button type="button" x-show="!collapsed" x-on:click="toggleSidebarLabels()" class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100 app-focus dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-white" aria-label="{{ __('Réduire') }}" title="{{ __('Réduire') }}">
+            <button type="button" x-show="!collapsed" x-on:click="toggleSidebarLabels()" class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100 app-focus dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-white" aria-label="{{ __('Collapse') }}" title="{{ __('Collapse') }}">
                 <x-icon name="panel-left-close" class="h-4 w-4" />
-                <span>{{ __('Réduire') }}</span>
+                <span>{{ __('Collapse') }}</span>
             </button>
 
             <!-- Expand Button -->
-            <button type="button" x-show="collapsed" x-on:click="toggleSidebarLabels()" class="mx-auto grid h-10 w-10 place-items-center rounded-lg border border-zinc-200 bg-white text-zinc-600 hover:text-brand-700 app-focus dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:text-brand-200" aria-label="{{ __('Agrandir') }}" title="{{ __('Agrandir') }}" style="display: none;">
+            <button type="button" x-show="collapsed" x-on:click="toggleSidebarLabels()" class="mx-auto grid h-10 w-10 place-items-center rounded-lg border border-zinc-200 bg-white text-zinc-600 hover:text-brand-700 app-focus dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:text-brand-200" aria-label="{{ __('Expand') }}" title="{{ __('Expand') }}" style="display: none;">
                 <x-icon name="panel-left-open" class="h-4 w-4" />
             </button>
         @endif

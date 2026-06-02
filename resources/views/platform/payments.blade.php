@@ -2,14 +2,14 @@
     <x-slot name="header">
         <div class="flex flex-col gap-1">
             <p class="text-sm font-semibold uppercase tracking-wide text-brand-700 dark:text-brand-300">{{ __('Super admin') }}</p>
-            <h1 class="text-xl font-semibold text-zinc-950 dark:text-white">{{ __('Paiements et Abonnements') }}</h1>
+            <h1 class="text-xl font-semibold text-zinc-950 dark:text-white">{{ __('Payments and Subscriptions') }}</h1>
         </div>
     </x-slot>
 
     <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <section class="rounded-lg border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
             <div class="border-b border-zinc-200 p-5 dark:border-zinc-800">
-                <h2 class="text-lg font-semibold text-zinc-950 dark:text-white">{{ __('Liste des restaurants') }}</h2>
+                <h2 class="text-lg font-semibold text-zinc-950 dark:text-white">{{ __('Restaurant list') }}</h2>
             </div>
 
             <div class="overflow-x-auto">
@@ -17,10 +17,10 @@
                     <thead class="bg-zinc-50 text-left text-xs font-semibold uppercase text-zinc-500 dark:bg-zinc-950 dark:text-zinc-400">
                         <tr>
                             <th class="px-5 py-3">{{ __('Restaurant') }}</th>
-                            <th class="px-5 py-3">{{ __('Type d\'abonnement') }}</th>
-                            <th class="px-5 py-3">{{ __('Dernier paiement') }}</th>
-                            <th class="px-5 py-3">{{ __('Prochain paiement') }}</th>
-                            <th class="px-5 py-3 text-right">{{ __('Historique') }}</th>
+                            <th class="px-5 py-3">{{ __('Subscription type') }}</th>
+                            <th class="px-5 py-3">{{ __('Last payment') }}</th>
+                            <th class="px-5 py-3">{{ __('Next payment') }}</th>
+                            <th class="px-5 py-3 text-right">{{ __('History') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -40,7 +40,7 @@
                                             {{ $tenant->plan->name }}
                                         </span>
                                     @else
-                                        <span class="text-zinc-500 dark:text-zinc-400">{{ __('Aucun') }}</span>
+                                        <span class="text-zinc-500 dark:text-zinc-400">{{ __('None') }}</span>
                                     @endif
                                 </td>
                                 <td class="px-5 py-4 align-top">
@@ -65,7 +65,7 @@
                                 <td class="px-5 py-4 align-top text-right">
                                     @if($tenant->billingHistories->isNotEmpty())
                                         <button @click="open = !open" class="text-sm font-semibold text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 transition">
-                                            {{ trans_choice(':count paiement|:count paiements', $tenant->billingHistories->count(), ['count' => $tenant->billingHistories->count()]) }}
+                                            {{ trans_choice(':count payment|:count payments', $tenant->billingHistories->count(), ['count' => $tenant->billingHistories->count()]) }}
                                         </button>
                                         
                                         <div x-show="open" x-collapse x-cloak class="mt-3 text-left bg-zinc-50 dark:bg-zinc-950 p-3 rounded border border-zinc-200 dark:border-zinc-800 text-xs">
@@ -79,19 +79,19 @@
                                                             'text-emerald-600 dark:text-emerald-400' => $history->status === 'paid',
                                                             'text-amber-600 dark:text-amber-400' => $history->status === 'pending',
                                                             'text-rose-600 dark:text-rose-400' => $history->status === 'failed',
-                                                        ])>{{ ucfirst($history->status) }}</span>
+                                                        ])>{{ __(ucfirst($history->status)) }}</span>
                                                     </li>
                                                 @endforeach
                                             </ul>
                                         </div>
                                     @else
-                                        <span class="text-zinc-500 dark:text-zinc-400">{{ __('Aucun paiement') }}</span>
+                                        <span class="text-zinc-500 dark:text-zinc-400">{{ __('No payment') }}</span>
                                     @endif
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="px-5 py-10 text-center text-sm text-zinc-600 dark:text-zinc-300">{{ __('Aucun restaurant trouvé.') }}</td>
+                                <td colspan="5" class="px-5 py-10 text-center text-sm text-zinc-600 dark:text-zinc-300">{{ __('No restaurant found.') }}</td>
                             </tr>
                         @endforelse
                     </tbody>

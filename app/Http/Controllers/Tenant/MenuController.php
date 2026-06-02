@@ -17,10 +17,15 @@ class MenuController extends Controller
         $tableToken = trim((string) $request->query('table', ''));
 
         if ($tableToken !== '') {
-            if (RestaurantTable::query()->where('qr_token', $tableToken)->where('is_active', true)->exists()) {
+            $table = RestaurantTable::query()->where('qr_token', $tableToken)->first();
+
+            if ($table && $table->is_active && ! $table->is_occupied) {
                 $request->session()->put($this->tableSessionKey(), $tableToken);
             } else {
                 $request->session()->forget($this->tableSessionKey());
+                $request->session()->flash('status', $table
+                    ? __('This table is already occupied. Please choose another table.')
+                    : __('This table QR is not registered for this restaurant.'));
             }
         }
 

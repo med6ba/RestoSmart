@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <h1 class="text-xl font-semibold text-stone-950">Kitchen display system</h1>
+        <h1 class="text-xl font-semibold text-stone-950">{{ __('Kitchen display system') }}</h1>
     </x-slot>
 
     <div class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8" data-realtime-scope="orders,stock,menu">
@@ -52,13 +52,13 @@
                             {{ __('Print receipt') }}
                         </a>
                         @if ($order->status === 'received')
-                            <button type="button" x-data="" x-on:click.prevent="$dispatch('open-modal', 'start-order-{{ $order->id }}')" class="rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white">Start</button>
+                            <button type="button" x-data="" x-on:click.prevent="$dispatch('open-modal', 'start-order-{{ $order->id }}')" class="rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white">{{ __('Start') }}</button>
                         @endif
                         @if ($order->status === 'preparing')
-                            <button type="button" x-data="" x-on:click.prevent="$dispatch('open-modal', 'ready-order-{{ $order->id }}')" class="rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold text-white">Ready</button>
+                            <button type="button" x-data="" x-on:click.prevent="$dispatch('open-modal', 'ready-order-{{ $order->id }}')" class="rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold text-white">{{ __('Ready') }}</button>
                         @endif
-                        @if (in_array($order->type, ['takeaway', 'click_collect'], true) && $order->status === 'ready')
-                            <button type="button" x-data="" x-on:click.prevent="$dispatch('open-modal', 'collect-order-{{ $order->id }}')" class="rounded-lg bg-stone-900 px-4 py-2 text-sm font-semibold text-white">Collected</button>
+                        @if (in_array($order->type, ['local', 'takeaway', 'click_collect'], true) && $order->status === 'ready')
+                            <button type="button" x-data="" x-on:click.prevent="$dispatch('open-modal', 'collect-order-{{ $order->id }}')" class="rounded-lg bg-stone-900 px-4 py-2 text-sm font-semibold text-white">{{ __('Collected') }}</button>
                         @endif
                     </div>
 
@@ -66,11 +66,11 @@
                         <x-modal name="start-order-{{ $order->id }}" maxWidth="md" focusable>
                             <form method="POST" action="{{ route('tenant.kitchen.preparing', [tenant('id'), $order]) }}" class="p-6">
                                 @csrf
-                                <h3 class="text-lg font-semibold text-zinc-950 dark:text-white">Start {{ $order->public_code }}?</h3>
-                                <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-300">This moves the order into preparation.</p>
+                                <h3 class="text-lg font-semibold text-zinc-950 dark:text-white">{{ __('Start :code?', ['code' => $order->public_code]) }}</h3>
+                                <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-300">{{ __('This moves the order into preparation.') }}</p>
                                 <div class="mt-6 flex justify-end gap-3">
-                                    <x-secondary-button x-on:click="$dispatch('close')">Cancel</x-secondary-button>
-                                    <x-primary-button>Start order</x-primary-button>
+                                    <x-secondary-button x-on:click="$dispatch('close')">{{ __('Cancel') }}</x-secondary-button>
+                                    <x-primary-button>{{ __('Start order') }}</x-primary-button>
                                 </div>
                             </form>
                         </x-modal>
@@ -80,32 +80,32 @@
                         <x-modal name="ready-order-{{ $order->id }}" maxWidth="md" focusable>
                             <form method="POST" action="{{ route('tenant.kitchen.ready', [tenant('id'), $order]) }}" class="p-6">
                                 @csrf
-                                <h3 class="text-lg font-semibold text-zinc-950 dark:text-white">Mark {{ $order->public_code }} ready?</h3>
-                                <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-300">Drivers, admins, and guests will see the ready status.</p>
+                                <h3 class="text-lg font-semibold text-zinc-950 dark:text-white">{{ __('Mark :code ready?', ['code' => $order->public_code]) }}</h3>
+                                <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-300">{{ __('Drivers, admins, and guests will see the ready status.') }}</p>
                                 <div class="mt-6 flex justify-end gap-3">
-                                    <x-secondary-button x-on:click="$dispatch('close')">Cancel</x-secondary-button>
-                                    <x-primary-button>Mark ready</x-primary-button>
+                                    <x-secondary-button x-on:click="$dispatch('close')">{{ __('Cancel') }}</x-secondary-button>
+                                    <x-primary-button>{{ __('Mark ready') }}</x-primary-button>
                                 </div>
                             </form>
                         </x-modal>
                     @endif
 
-                    @if (in_array($order->type, ['takeaway', 'click_collect'], true) && $order->status === 'ready')
+                    @if (in_array($order->type, ['local', 'takeaway', 'click_collect'], true) && $order->status === 'ready')
                         <x-modal name="collect-order-{{ $order->id }}" maxWidth="md" focusable>
                             <form method="POST" action="{{ route('tenant.kitchen.collected', [tenant('id'), $order]) }}" class="p-6">
                                 @csrf
-                                <h3 class="text-lg font-semibold text-zinc-950 dark:text-white">Mark {{ $order->public_code }} collected?</h3>
-                                <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-300">This closes the pickup order.</p>
+                                <h3 class="text-lg font-semibold text-zinc-950 dark:text-white">{{ __('Mark :code collected?', ['code' => $order->public_code]) }}</h3>
+                                <p class="mt-2 text-sm text-zinc-600 dark:text-zinc-300">{{ __('This closes the order and frees the table when needed.') }}</p>
                                 <div class="mt-6 flex justify-end gap-3">
-                                    <x-secondary-button x-on:click="$dispatch('close')">Cancel</x-secondary-button>
-                                    <x-primary-button>Mark collected</x-primary-button>
+                                    <x-secondary-button x-on:click="$dispatch('close')">{{ __('Cancel') }}</x-secondary-button>
+                                    <x-primary-button>{{ __('Mark collected') }}</x-primary-button>
                                 </div>
                             </form>
                         </x-modal>
                     @endif
                 </article>
             @empty
-                <div class="rounded-lg border border-stone-200 bg-white p-6 text-sm text-stone-600 lg:col-span-3">No kitchen orders waiting.</div>
+                <div class="rounded-lg border border-stone-200 bg-white p-6 text-sm text-stone-600 lg:col-span-3">{{ __('No kitchen orders waiting.') }}</div>
             @endforelse
         </div>
     </div>

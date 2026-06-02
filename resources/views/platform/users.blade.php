@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="flex flex-col gap-1">
             <p class="text-sm font-semibold uppercase tracking-wide text-brand-700 dark:text-brand-300">{{ __('Super admin') }}</p>
-            <h1 class="text-xl font-semibold text-zinc-950 dark:text-white">{{ __('Utilisateurs') }}</h1>
+            <h1 class="text-xl font-semibold text-zinc-950 dark:text-white">{{ __('Users') }}</h1>
         </div>
     </x-slot>
 
@@ -27,7 +27,7 @@
                         </span>
                         <span class="min-w-0">
                             <span class="block truncate font-semibold">{{ __($roleMeta['label']) }}</span>
-                            <span class="text-xs text-zinc-500 dark:text-zinc-400">{{ trans_choice(':count utilisateur|:count utilisateurs', $roleMeta['count'], ['count' => $roleMeta['count']]) }}</span>
+                            <span class="text-xs text-zinc-500 dark:text-zinc-400">{{ trans_choice(':count user|:count users', $roleMeta['count'], ['count' => $roleMeta['count']]) }}</span>
                         </span>
                     </span>
                 </a>
@@ -39,21 +39,21 @@
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div>
                         <p class="text-sm font-semibold uppercase tracking-wide text-brand-700 dark:text-brand-300">{{ __($selectedRoleMeta['label']) }}</p>
-                        <h2 class="mt-1 text-lg font-semibold text-zinc-950 dark:text-white">{{ __('Liste des utilisateurs') }}</h2>
+                        <h2 class="mt-1 text-lg font-semibold text-zinc-950 dark:text-white">{{ __('User list') }}</h2>
                     </div>
 
                     <form method="GET" action="{{ route('platform.users.role', $selectedRole) }}" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-[220px_160px_180px_auto]">
                         <label class="grid gap-1 text-sm font-semibold text-zinc-700 dark:text-zinc-200">
-                            {{ __('Recherche') }}
-                            <input name="q" value="{{ $filters['q'] ?? '' }}" type="search" class="rounded-md border-zinc-300 text-sm dark:border-zinc-700" placeholder="{{ __('Nom, email, téléphone') }}">
+                            {{ __('Search') }}
+                            <input name="q" value="{{ $filters['q'] ?? '' }}" type="search" class="rounded-md border-zinc-300 text-sm dark:border-zinc-700" placeholder="{{ __('Name, email, phone') }}">
                         </label>
 
                         <label class="grid gap-1 text-sm font-semibold text-zinc-700 dark:text-zinc-200">
-                            {{ __('Statut') }}
+                            {{ __('Status') }}
                             <select name="status" class="rounded-md border-zinc-300 text-sm dark:border-zinc-700">
-                                <option value="">{{ __('Tous') }}</option>
+                                <option value="">{{ __('All') }}</option>
                                 @foreach (['active', 'inactive', 'suspended'] as $status)
-                                    <option value="{{ $status }}" @selected(($filters['status'] ?? '') === $status)>{{ ucfirst($status) }}</option>
+                                    <option value="{{ $status }}" @selected(($filters['status'] ?? '') === $status)>{{ __(ucfirst($status)) }}</option>
                                 @endforeach
                             </select>
                         </label>
@@ -61,8 +61,8 @@
                         <label class="grid gap-1 text-sm font-semibold text-zinc-700 dark:text-zinc-200">
                             {{ __('Restaurant') }}
                             <select name="tenant_id" class="rounded-md border-zinc-300 text-sm dark:border-zinc-700">
-                                <option value="">{{ __('Tous') }}</option>
-                                <option value="none" @selected(($filters['tenant_id'] ?? '') === 'none')>{{ __('Sans restaurant') }}</option>
+                                <option value="">{{ __('All') }}</option>
+                                <option value="none" @selected(($filters['tenant_id'] ?? '') === 'none')>{{ __('Without restaurant') }}</option>
                                 @foreach ($tenants as $tenant)
                                     <option value="{{ $tenant->id }}" @selected(($filters['tenant_id'] ?? '') === $tenant->id)>{{ $tenant->name }}</option>
                                 @endforeach
@@ -72,7 +72,7 @@
                         <div class="flex items-end gap-2">
                             <x-primary-button class="h-10 justify-center gap-2">
                                 <x-icon name="check" class="h-4 w-4" />
-                                {{ __('Filtrer') }}
+                                {{ __('Filter') }}
                             </x-primary-button>
                             <a href="{{ route('platform.users.role', $selectedRole) }}" class="inline-flex h-10 items-center justify-center rounded-lg border border-zinc-300 px-3 text-sm font-semibold text-zinc-700 hover:bg-zinc-100 app-focus dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800">{{ __('Reset') }}</a>
                         </div>
@@ -84,10 +84,10 @@
                 <table class="min-w-full divide-y divide-zinc-200 text-sm dark:divide-zinc-800">
                     <thead class="bg-zinc-50 text-left text-xs font-semibold uppercase text-zinc-500 dark:bg-zinc-950 dark:text-zinc-400">
                         <tr>
-                            <th class="px-5 py-3">{{ __('Utilisateur') }}</th>
+                            <th class="px-5 py-3">{{ __('User') }}</th>
                             <th class="px-5 py-3">{{ __('Restaurant') }}</th>
-                            <th class="px-5 py-3">{{ __('Statut') }}</th>
-                            <th class="px-5 py-3">{{ __('Créé le') }}</th>
+                            <th class="px-5 py-3">{{ __('Status') }}</th>
+                            <th class="px-5 py-3">{{ __('Created on') }}</th>
                             <th class="px-5 py-3 text-right">{{ __('Action') }}</th>
                         </tr>
                     </thead>
@@ -110,7 +110,7 @@
                                         <p class="font-semibold text-zinc-800 dark:text-zinc-100">{{ $managedUser->tenant->name }}</p>
                                         <p class="text-xs text-zinc-500 dark:text-zinc-400">/{{ $managedUser->tenant_id }}</p>
                                     @else
-                                        <span class="text-zinc-500 dark:text-zinc-400">{{ __('Plateforme') }}</span>
+                                        <span class="text-zinc-500 dark:text-zinc-400">{{ __('Platform') }}</span>
                                     @endif
                                 </td>
                                 <td class="px-5 py-4">
@@ -118,18 +118,18 @@
                                         'inline-flex rounded-full px-3 py-1 text-xs font-semibold',
                                         'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-200' => $managedUser->status === 'active',
                                         'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-200' => $managedUser->status !== 'active',
-                                    ])>{{ ucfirst($managedUser->status) }}</span>
+                                    ])>{{ __(ucfirst($managedUser->status)) }}</span>
                                 </td>
                                 <td class="px-5 py-4 text-zinc-600 dark:text-zinc-300">{{ $managedUser->created_at?->format('Y-m-d') }}</td>
                                 <td class="px-5 py-4 text-right">
                                     @if ($managedUser->is(auth()->user()))
-                                        <span class="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{{ __('Compte actuel') }}</span>
+                                        <span class="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{{ __('Current account') }}</span>
                                     @else
                                         <form method="POST" action="{{ route('platform.users.impersonate', $managedUser) }}" class="inline-flex">
                                             @csrf
                                             <button class="inline-flex items-center justify-center gap-2 rounded-lg bg-brand-700 px-3 py-2 text-xs font-semibold text-white hover:bg-brand-800 app-focus">
                                                 <x-icon name="log-in" class="h-4 w-4" />
-                                                {{ __('Entrer en tant que') }}
+                                                {{ __('Enter as') }}
                                             </button>
                                         </form>
                                     @endif
@@ -137,7 +137,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="px-5 py-10 text-center text-sm text-zinc-600 dark:text-zinc-300">{{ __('Aucun utilisateur trouvé.') }}</td>
+                                <td colspan="5" class="px-5 py-10 text-center text-sm text-zinc-600 dark:text-zinc-300">{{ __('No user found.') }}</td>
                             </tr>
                         @endforelse
                     </tbody>

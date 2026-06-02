@@ -86,7 +86,7 @@
                         </x-slot>
                     </x-dropdown>
                 @else
-                    <a href="{{ $tenantId ? route('tenant.login', $tenantId) : route('login') }}" class="text-sm font-semibold text-stone-700 hover:text-stone-950">Log in</a>
+                    <a href="{{ $tenantId ? route('tenant.login', $tenantId) : route('login') }}" class="text-sm font-semibold text-stone-700 hover:text-stone-950">{{ __('Log in') }}</a>
                 @endif
             </div>
 

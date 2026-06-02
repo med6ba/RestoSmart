@@ -7,7 +7,7 @@
         <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <h1 class="text-2xl font-bold text-zinc-950 dark:text-white">{{ __('Super command center') }}</h1>
-                <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{{ __('Gérez la plateforme globale et surveillez les performances.') }}</p>
+                <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{{ __('Manage the global platform and monitor performance.') }}</p>
             </div>
         </div>
     </x-slot>
@@ -33,7 +33,7 @@
                         <x-icon name="check" class="h-3 w-3" />
                         +{{ $stats['mrr_trend'] }}%
                     </span>
-                    <span class="text-zinc-500 dark:text-zinc-500">{{ __('vs mois dernier') }}</span>
+                    <span class="text-zinc-500 dark:text-zinc-500">{{ __('vs last month') }}</span>
                 </div>
             </div>
 
@@ -52,7 +52,7 @@
                         <x-icon name="check" class="h-3 w-3" />
                         {{ $stats['restaurants_trend'] > 0 ? '+' : '' }}{{ $stats['restaurants_trend'] }}%
                     </span>
-                    <span class="text-zinc-500 dark:text-zinc-500">{{ __('nouveaux inscrits') }}</span>
+                    <span class="text-zinc-500 dark:text-zinc-500">{{ __('new signups') }}</span>
                 </div>
             </div>
 
@@ -60,39 +60,39 @@
             <div class="group relative overflow-hidden rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50">
                 <div class="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-blue-500/10 blur-2xl transition-all group-hover:bg-blue-500/20"></div>
                 <div class="flex items-center justify-between">
-                    <p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">{{ __('Actifs') }}</p>
+                    <p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">{{ __('Active') }}</p>
                     <span class="grid h-8 w-8 place-items-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400">
                         <x-icon name="play" class="h-4 w-4" />
                     </span>
                 </div>
                 <p class="mt-2 text-3xl font-bold text-zinc-950 dark:text-white">{{ $stats['active'] }}</p>
-                <p class="mt-3 text-xs font-medium text-zinc-500">{{ __('Restaurants en ligne') }}</p>
+                <p class="mt-3 text-xs font-medium text-zinc-500">{{ __('Restaurants online') }}</p>
             </div>
 
             <!-- Trials -->
             <div class="group relative overflow-hidden rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50">
                 <div class="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-amber-500/10 blur-2xl transition-all group-hover:bg-amber-500/20"></div>
                 <div class="flex items-center justify-between">
-                    <p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">{{ __('En essai') }}</p>
+                    <p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">{{ __('Trial') }}</p>
                     <span class="grid h-8 w-8 place-items-center rounded-full bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400">
                         <x-icon name="clock" class="h-4 w-4" />
                     </span>
                 </div>
                 <p class="mt-2 text-3xl font-bold text-zinc-950 dark:text-white">{{ $stats['trial'] }}</p>
-                <p class="mt-3 text-xs font-medium text-zinc-500">{{ __('Abonnement non activé') }}</p>
+                <p class="mt-3 text-xs font-medium text-zinc-500">{{ __('Subscription not activated') }}</p>
             </div>
 
             <!-- Pending -->
             <div class="group relative overflow-hidden rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/50">
                 <div class="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-rose-500/10 blur-2xl transition-all group-hover:bg-rose-500/20"></div>
                 <div class="flex items-center justify-between">
-                    <p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">{{ __('En attente') }}</p>
+                    <p class="text-sm font-medium text-zinc-600 dark:text-zinc-400">{{ __('Pending') }}</p>
                     <span class="grid h-8 w-8 place-items-center rounded-full bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400">
                         <x-icon name="clipboard-list" class="h-4 w-4" />
                     </span>
                 </div>
                 <p class="mt-2 text-3xl font-bold text-zinc-950 dark:text-white">{{ $stats['pending'] }}</p>
-                <p class="mt-3 text-xs font-medium text-zinc-500">{{ __('Approbation requise') }}</p>
+                <p class="mt-3 text-xs font-medium text-zinc-500">{{ __('Approval required') }}</p>
             </div>
         </section>
 
@@ -101,7 +101,7 @@
             <div class="flex flex-col rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
                 <div class="border-b border-zinc-100 p-5 dark:border-zinc-800/50">
                     <h2 class="text-lg font-semibold text-zinc-950 dark:text-white">{{ __('Restaurant approvals') }}</h2>
-                    <p class="text-sm text-zinc-500 dark:text-zinc-400">{{ __('Gérez les nouvelles demandes d\'inscription à la plateforme.') }}</p>
+                    <p class="text-sm text-zinc-500 dark:text-zinc-400">{{ __('Manage new platform signup requests.') }}</p>
                 </div>
                 <div class="flex-1 overflow-x-auto p-0">
                     <table class="min-w-full divide-y divide-zinc-200 text-sm dark:divide-zinc-800">
@@ -126,7 +126,7 @@
                                             @if($application->status === 'pending')
                                                 <span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>
                                             @endif
-                                            {{ ucfirst($application->status) }}
+                                            {{ __(ucfirst($application->status)) }}
                                         </span>
                                     </td>
                                     <td class="px-5 py-4 text-right">
@@ -184,7 +184,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4" class="px-5 py-10 text-center text-sm text-zinc-500 dark:text-zinc-400">{{ __('Aucune demande en attente.') }}</td>
+                                    <td colspan="4" class="px-5 py-10 text-center text-sm text-zinc-500 dark:text-zinc-400">{{ __('No pending requests.') }}</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -197,7 +197,7 @@
                 <div class="border-b border-zinc-100 p-5 dark:border-zinc-800/50 flex items-center justify-between">
                     <div>
                         <h2 class="text-lg font-semibold text-zinc-950 dark:text-white">{{ __('Platform alerts') }}</h2>
-                        <p class="text-sm text-zinc-500 dark:text-zinc-400">{{ __('Notifications système récentes.') }}</p>
+                        <p class="text-sm text-zinc-500 dark:text-zinc-400">{{ __('Recent system notifications.') }}</p>
                     </div>
                     <span class="grid h-8 w-8 place-items-center rounded-full bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400">
                         <x-icon name="bell" class="h-4 w-4" />
@@ -232,9 +232,9 @@
             <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-6">
                 <div>
                     <h2 class="text-lg font-semibold text-zinc-950 dark:text-white">{{ __('Tenants and subscriptions') }}</h2>
-                    <p class="text-sm text-zinc-500 dark:text-zinc-400">{{ __('Gérez les abonnements de tous les restaurants.') }}</p>
+                    <p class="text-sm text-zinc-500 dark:text-zinc-400">{{ __('Manage subscriptions for every restaurant.') }}</p>
                 </div>
-                <a href="{{ route('platform.users.role', 'admin') }}" class="text-sm font-semibold text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 transition-colors">{{ __('Voir tout') }} &rarr;</a>
+                <a href="{{ route('platform.users.role', 'admin') }}" class="text-sm font-semibold text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300 transition-colors">{{ __('View all') }} &rarr;</a>
             </div>
             
             <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -247,19 +247,19 @@
                                     <p class="mt-0.5 truncate text-sm text-zinc-500 dark:text-zinc-400">/{{ $tenant->id }}</p>
                                 </div>
                                 <span class="shrink-0 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold {{ $tenant->status === 'active' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' : 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300' }}">
-                                    {{ ucfirst($tenant->status) }}
+                                    {{ __(ucfirst($tenant->status)) }}
                                 </span>
                             </div>
                             
                             <div class="mt-4 flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400">
                                 <x-icon name="package" class="h-4 w-4 shrink-0 text-zinc-400" />
-                                <span class="truncate font-medium">{{ $tenant->plan?->name ?? __('Aucun plan') }}</span>
+                                <span class="truncate font-medium">{{ $tenant->plan?->name ?? __('No plan') }}</span>
                             </div>
                         </div>
                         
                         <button type="button" x-data="" x-on:click.prevent="$dispatch('open-modal', 'update-tenant-{{ $tenant->id }}')" class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-zinc-50 px-3 py-2 text-sm font-semibold text-zinc-700 ring-1 ring-inset ring-zinc-200 hover:bg-zinc-100 app-focus dark:bg-zinc-800/50 dark:text-zinc-300 dark:ring-zinc-700/50 dark:hover:bg-zinc-800 transition-all group-hover:bg-brand-50 group-hover:text-brand-700 group-hover:ring-brand-200 dark:group-hover:bg-brand-900/20 dark:group-hover:text-brand-300 dark:group-hover:ring-brand-800">
                             <x-icon name="settings" class="h-4 w-4" />
-                            {{ __('Gérer l\'abonnement') }}
+                            {{ __('Manage subscription') }}
                         </button>
                     </article>
 
@@ -275,7 +275,7 @@
                                     {{ __('Status') }}
                                     <select name="status" class="rounded-md border-zinc-300 text-sm dark:border-zinc-700 dark:bg-zinc-900">
                                         @foreach (['trial', 'active', 'expired', 'suspended'] as $status)
-                                            <option value="{{ $status }}" @selected(old('status', $tenant->status) === $status)>{{ ucfirst($status) }}</option>
+                                            <option value="{{ $status }}" @selected(old('status', $tenant->status) === $status)>{{ __(ucfirst($status)) }}</option>
                                         @endforeach
                                     </select>
                                 </label>

@@ -25,7 +25,7 @@ class RestaurantApplicationController extends Controller
 
         return redirect()
             ->route('login')
-            ->with('status', 'Application received. The platform team can approve it from the super dashboard.');
+            ->with('status', __('Application received. The platform team can approve it from the super dashboard.'));
     }
 
     public function approve(Request $request, RestaurantApplication $application, PlatformProvisioningService $service): RedirectResponse
@@ -37,7 +37,7 @@ class RestaurantApplicationController extends Controller
 
         $tenant = $service->approve($application, $request->integer('plan_id') ?: null, $request->input('decision_note'));
 
-        return back()->with('status', 'Tenant '.$tenant->id.' approved and provisioned.');
+        return back()->with('status', __('Tenant :tenant approved and provisioned.', ['tenant' => $tenant->id]));
     }
 
     public function reject(Request $request, RestaurantApplication $application, PlatformProvisioningService $service): RedirectResponse
@@ -48,6 +48,6 @@ class RestaurantApplicationController extends Controller
 
         $service->reject($application, $request->input('decision_note'));
 
-        return back()->with('status', 'Application rejected.');
+        return back()->with('status', __('Application rejected.'));
     }
 }

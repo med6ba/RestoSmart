@@ -42,7 +42,7 @@ class TenantLoginRequest extends FormRequest
             Auth::logout();
 
             throw ValidationException::withMessages([
-                'email' => 'This account is not active.',
+                'email' => __('This account is not active.'),
             ]);
         }
 

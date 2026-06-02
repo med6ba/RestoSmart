@@ -39,7 +39,7 @@ class DriverController extends Controller
 
         $workflow->pickUp($order->fresh(), $request->user());
 
-        return back()->with('status', $order->public_code.' picked up.');
+        return back()->with('status', __(':code picked up.', ['code' => $order->public_code]));
     }
 
     public function deliver(Request $request, Order $order, OrderWorkflowService $workflow): RedirectResponse
@@ -48,7 +48,7 @@ class DriverController extends Controller
 
         $workflow->deliver($order, $request->user());
 
-        return back()->with('status', $order->public_code.' delivered.');
+        return back()->with('status', __(':code delivered.', ['code' => $order->public_code]));
     }
 
 }

@@ -45,8 +45,16 @@ class OrderWorkflowService
             if ($type === 'local') {
                 $table = RestaurantTable::query()
                     ->where('qr_token', $payload['restaurant_table_token'])
-                    ->where('is_active', true)
-                    ->firstOrFail();
+                    ->lockForUpdate()
+                    ->first();
+
+                if (! $table || ! $table->is_active) {
+                    abort(422, __('This table QR is not registered for this restaurant.'));
+                }
+
+                if ($table->is_occupied) {
+                    abort(422, __('This table is already occupied. Please choose another table.'));
+                }
             }
 
             $order = Order::query()->create([
@@ -89,13 +97,25 @@ class OrderWorkflowService
                 ] + $this->deliveryRouteAttributes($order));
             }
 
-            $this->notify('kitchen', 'new_order', 'New order '.$order->public_code, 'A '.$order->typeLabel().' order is waiting for preparation.');
-            $this->notify('admin', 'new_order', 'New order '.$order->public_code, $order->formattedTotal().' from '.$order->customer_name);
+            if ($table) {
+                $table->update([
+                    'is_occupied' => true,
+                    'occupied_order_id' => $order->id,
+                    'occupied_at' => now(),
+                ]);
+            }
+
+            $this->notify('kitchen', 'new_order', __('New order :code', ['code' => $order->public_code]), __('A :type order is waiting for preparation.', ['type' => $order->typeLabel()]));
+            $this->notify('admin', 'new_order', __('New order :code', ['code' => $order->public_code]), __(':total from :customer', ['total' => $order->formattedTotal(), 'customer' => $order->customer_name]));
 
             return $order->load(['items', 'delivery', 'restaurantTable']);
         });
 
         $this->broadcastTenantUpdate(['admin', 'kitchen', 'client'], 'orders', 'order.placed', $order, __('New order :code received.', ['code' => $order->public_code]));
+
+        if ($order->restaurantTable) {
+            $this->broadcastTableUpdate($order->restaurantTable, 'table.occupied', __('Table :table is now occupied.', ['table' => $order->restaurantTable->code]));
+        }
 
         return $order;
     }
@@ -103,7 +123,7 @@ class OrderWorkflowService
     public function markPreparing(Order $order): Order
     {
         $order->update(['status' => 'preparing']);
-        $this->notifyUser($order->user_id, 'order_update', 'Order in preparation', $order->public_code.' is now in the kitchen.');
+        $this->notifyUser($order->user_id, 'order_update', __('Order in preparation'), __(':code is now in the kitchen.', ['code' => $order->public_code]));
         $this->broadcastTenantUpdate(['admin', 'kitchen', 'client'], 'orders', 'order.preparing', $order, __('Order :code is now preparing.', ['code' => $order->public_code]));
 
         return $order;
@@ -117,16 +137,16 @@ class OrderWorkflowService
         ]);
 
         match ($order->type) {
-            'delivery' => $this->notify('driver', 'delivery_ready', 'Delivery ready', $order->public_code.' is ready for dispatch.'),
-            'takeaway' => $this->notifyUser($order->user_id, 'order_update', 'Takeaway ready', $order->public_code.' is ready for pickup.'),
-            'local' => $this->notifyUser($order->user_id, 'order_update', 'Order ready', $order->public_code.' is ready for your table.'),
+            'delivery' => $this->notify('driver', 'delivery_ready', __('Delivery ready'), __(':code is ready for dispatch.', ['code' => $order->public_code])),
+            'takeaway' => $this->notifyUser($order->user_id, 'order_update', __('Takeaway ready'), __(':code is ready for pickup.', ['code' => $order->public_code])),
+            'local' => $this->notifyUser($order->user_id, 'order_update', __('Order ready'), __(':code is ready for your table.', ['code' => $order->public_code])),
             default => null,
         };
 
-        $this->notify('admin', 'order_ready', 'Order ready', $order->public_code.' can now be assigned, served, or handed over.');
+        $this->notify('admin', 'order_ready', __('Order ready'), __(':code can now be assigned, served, or handed over.', ['code' => $order->public_code]));
 
         if (! in_array($order->type, ['local', 'takeaway'], true)) {
-            $this->notifyUser($order->user_id, 'order_update', 'Order ready', $order->public_code.' is ready.');
+            $this->notifyUser($order->user_id, 'order_update', __('Order ready'), __(':code is ready.', ['code' => $order->public_code]));
         }
 
         $roles = $order->type === 'delivery'
@@ -146,9 +166,28 @@ class OrderWorkflowService
             'collected_at' => now(),
         ]);
 
-        $this->notify('admin', 'order_collected', 'Takeaway collected', $order->public_code.' was picked up by '.$order->customer_name.'.');
-        $this->notifyUser($order->user_id, 'order_update', 'Order collected', 'Enjoy your meal.');
+        if ($order->type === 'local' && $order->restaurantTable) {
+            $order->restaurantTable->update([
+                'is_occupied' => false,
+                'occupied_order_id' => null,
+                'occupied_at' => null,
+            ]);
+        }
+
+        $this->notify(
+            'admin',
+            'order_collected',
+            $order->type === 'local' ? __('Order collected') : __('Takeaway collected'),
+            $order->type === 'local'
+                ? __(':code was closed for table :table.', ['code' => $order->public_code, 'table' => $order->restaurantTable?->code ?? __('Table')])
+                : __(':code was picked up by :customer.', ['code' => $order->public_code, 'customer' => $order->customer_name]),
+        );
+        $this->notifyUser($order->user_id, 'order_update', __('Order collected'), __('Enjoy your meal.'));
         $this->broadcastTenantUpdate(['admin', 'kitchen', 'client'], 'orders', 'order.collected', $order, __('Order :code was collected.', ['code' => $order->public_code]));
+
+        if ($order->type === 'local' && $order->restaurantTable) {
+            $this->broadcastTableUpdate($order->restaurantTable, 'table.available', __('Table :table is available again.', ['table' => $order->restaurantTable->code]));
+        }
 
         return $order;
     }
@@ -169,8 +208,8 @@ class OrderWorkflowService
             ] + $this->deliveryRouteAttributes($order),
         );
 
-        $this->notifyUser($driver->id, 'assigned_delivery', 'Delivery assigned', $order->public_code.' is ready to pick up.');
-        $this->notifyUser($order->user_id, 'order_update', 'Driver assigned', 'A driver is taking care of '.$order->public_code.'.');
+        $this->notifyUser($driver->id, 'assigned_delivery', __('Delivery assigned'), __(':code is ready to pick up.', ['code' => $order->public_code]));
+        $this->notifyUser($order->user_id, 'order_update', __('Driver assigned'), __('A driver is taking care of :code.', ['code' => $order->public_code]));
         $this->broadcastTenantUpdate(['admin', 'driver', 'client'], 'orders', 'order.assigned', $order->fresh(['driver']), __('Order :code was assigned.', ['code' => $order->public_code]));
 
         return $order;
@@ -189,7 +228,7 @@ class OrderWorkflowService
             'picked_up_at' => now(),
         ]);
 
-        $this->notifyUser($order->user_id, 'order_update', 'Order on the way', $order->public_code.' is out for delivery.');
+        $this->notifyUser($order->user_id, 'order_update', __('Order on the way'), __(':code is out for delivery.', ['code' => $order->public_code]));
         $this->broadcastTenantUpdate(['admin', 'driver', 'client'], 'orders', 'order.out_for_delivery', $order, __('Order :code is out for delivery.', ['code' => $order->public_code]));
 
         return $order;
@@ -210,8 +249,8 @@ class OrderWorkflowService
             'delivered_at' => now(),
         ]);
 
-        $this->notify('admin', 'order_delivered', 'Order delivered', $order->public_code.' was completed by '.$driver->name.'.');
-        $this->notifyUser($order->user_id, 'order_update', 'Order delivered', 'Thanks for ordering with us.');
+        $this->notify('admin', 'order_delivered', __('Order delivered'), __(':code was completed by :driver.', ['code' => $order->public_code, 'driver' => $driver->name]));
+        $this->notifyUser($order->user_id, 'order_update', __('Order delivered'), __('Thanks for ordering with us.'));
         $this->broadcastTenantUpdate(['admin', 'driver', 'client'], 'orders', 'order.delivered', $order, __('Order :code was delivered.', ['code' => $order->public_code]));
 
         return $order;
@@ -237,7 +276,7 @@ class OrderWorkflowService
     private function deliveryRouteAttributes(Order $order): array
     {
         return [
-            'route_summary' => 'Restaurant -> '.$order->delivery_address,
+            'route_summary' => __('Restaurant').' -> '.$order->delivery_address,
         ];
     }
 
@@ -255,12 +294,12 @@ class OrderWorkflowService
                 'order_id' => $order->id,
                 'type' => 'usage',
                 'quantity' => -1 * $required,
-                'note' => 'Consumed for '.$order->public_code,
+                'note' => __('Consumed for :code', ['code' => $order->public_code]),
             ]);
 
             $fresh = Ingredient::query()->find($ingredient->id);
             if ($fresh && $fresh->isLow()) {
-                $this->notify('admin', 'low_stock', 'Low stock: '.$fresh->name, 'Current stock is '.$fresh->current_stock.' '.$fresh->unit.'.');
+                $this->notify('admin', 'low_stock', __('Low stock: :name', ['name' => $fresh->name]), __('Current stock is :stock :unit.', ['stock' => $fresh->current_stock, 'unit' => $fresh->unit]));
             }
         }
     }
@@ -301,6 +340,23 @@ class OrderWorkflowService
                     'type_label' => $order->typeLabel(),
                     'driver' => $order->driver?->name,
                     'total' => $order->formattedTotal(),
+                ],
+            ]);
+        } catch (Throwable $exception) {
+            report($exception);
+        }
+    }
+
+    private function broadcastTableUpdate(RestaurantTable $table, string $type, string $message): void
+    {
+        try {
+            TenantRoleUpdated::dispatch((string) tenant('id'), ['admin', 'client'], 'tables', $type, [
+                'message' => $message,
+                'table' => [
+                    'id' => $table->id,
+                    'code' => $table->code,
+                    'is_active' => $table->is_active,
+                    'is_occupied' => $table->is_occupied,
                 ],
             ]);
         } catch (Throwable $exception) {

@@ -136,6 +136,12 @@
             <path d="m3 7 9 6 9-6" />
             @break
 
+        @case('messages-square')
+            <path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10Z" />
+            <path d="M8 9h8" />
+            <path d="M8 13h5" />
+            @break
+
         @case('map-pin')
             <path d="M12 22s7-5.3 7-12a7 7 0 1 0-14 0c0 6.7 7 12 7 12Z" />
             <circle cx="12" cy="10" r="2.5" />

@@ -29,6 +29,7 @@
             $pushNav(__('Menu'), route('tenant.menu', $tenantId), 'tenant.menu', 'utensils');
             $pushNav(__('Dashboard'), route('tenant.dashboard', $tenantId), 'tenant.dashboard', 'layout-dashboard');
             $pushNav(__('My orders'), route('tenant.orders.index', $tenantId), 'tenant.orders.*', 'receipt');
+            $pushNav(__('Delivery Chat'), route('tenant.client.delivery-chat.index', $tenantId), 'tenant.client.delivery-chat.*', 'messages-square');
         }
 
         if ($user->hasAnyRole('admin')) {
@@ -43,6 +44,7 @@
 
         if ($user->hasAnyRole('driver')) {
             $pushNav(__('Driver'), route('tenant.driver', $tenantId), 'tenant.driver', 'truck');
+            $pushNav(__('Delivery Chat'), route('tenant.driver.delivery-chat.index', $tenantId), 'tenant.driver.delivery-chat.*', 'messages-square');
         }
 
         $pushNav(__('Profile'), route('tenant.profile.edit', $tenantId), 'tenant.profile.*', 'user');
@@ -50,9 +52,9 @@
         $pushNav(__('Dashboard'), route('dashboard'), 'dashboard', 'layout-dashboard');
 
         if ($user->hasAnyRole('super')) {
-            $pushNav(__('Utilisateurs'), route('platform.users.index'), 'platform.users.*', 'users');
+            $pushNav(__('Users'), route('platform.users.index'), 'platform.users.*', 'users');
             
-            $pushNav(__('Paiement'), route('platform.payments.index'), 'platform.payments.*', 'credit-card-check');
+            $pushNav(__('Payments'), route('platform.payments.index'), 'platform.payments.*', 'credit-card-check');
         }
 
         if ($user->hasAnyRole('admin')) {

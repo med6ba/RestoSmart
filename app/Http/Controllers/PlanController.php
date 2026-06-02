@@ -28,7 +28,7 @@ class PlanController extends Controller
             'features' => collect(explode("\n", $data['features'] ?? ''))->map(fn ($item) => trim($item))->filter()->values()->all(),
         ]);
 
-        return back()->with('status', 'Plan created.');
+        return back()->with('status', __('Plan created.'));
     }
 
     public function update(Request $request, Plan $plan): RedirectResponse
@@ -47,6 +47,6 @@ class PlanController extends Controller
             'is_active' => $request->boolean('is_active'),
         ]);
 
-        return back()->with('status', 'Plan updated.');
+        return back()->with('status', __('Plan updated.'));
     }
 }

@@ -401,6 +401,9 @@ class DemoTenantSeeder extends Seeder
                     'qr_token' => strtoupper($restaurant['id']).'-TABLE-'.$code,
                     'sort_order' => $i,
                     'is_active' => true,
+                    'is_occupied' => false,
+                    'occupied_order_id' => null,
+                    'occupied_at' => null,
                 ],
             );
         }
@@ -562,6 +565,18 @@ class DemoTenantSeeder extends Seeder
             );
         } else {
             $order->delivery()->delete();
+        }
+
+        if (($payload['type'] ?? null) === 'local' && ($payload['restaurant_table_id'] ?? null)) {
+            $isOccupied = ! in_array($payload['status'], ['collected', 'cancelled'], true);
+
+            RestaurantTable::query()
+                ->whereKey($payload['restaurant_table_id'])
+                ->update([
+                    'is_occupied' => $isOccupied,
+                    'occupied_order_id' => $isOccupied ? $order->id : null,
+                    'occupied_at' => $isOccupied ? $order->placed_at : null,
+                ]);
         }
 
         return $order->load(['items', 'delivery']);

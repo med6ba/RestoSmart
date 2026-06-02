@@ -105,6 +105,28 @@ const setupTenantRealtime = () => {
         });
 };
 
+const formatLocalChatTime = (date) => {
+    if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+        return '';
+    }
+
+    return new Intl.DateTimeFormat(document.documentElement.lang || undefined, {
+        hour: '2-digit',
+        minute: '2-digit',
+    }).format(date);
+};
+
+const localizeChatTimes = () => {
+    document.querySelectorAll('[data-local-time][datetime]').forEach((element) => {
+        const date = new Date(element.getAttribute('datetime'));
+        const formatted = formatLocalChatTime(date);
+
+        if (formatted) {
+            element.textContent = formatted;
+        }
+    });
+};
+
 window.sidebarShell = () => ({
     sidebarOpen: false,
     collapsed: false,
@@ -195,9 +217,9 @@ window.liveClock = () => ({
 
     updateTime() {
         const now = new Date();
-        this.currentTime = now.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        
         const lang = document.documentElement.lang || 'en-US';
+
+        this.currentTime = now.toLocaleTimeString(lang, { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
         this.currentDate = now.toLocaleDateString(lang, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
         
         const offset = -now.getTimezoneOffset();
@@ -276,7 +298,9 @@ window.notificationsDropdown = () => ({
     formatTime(dateString) {
         if (!dateString) return '';
         const date = new Date(dateString);
-        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        const lang = document.documentElement.lang || undefined;
+
+        return date.toLocaleDateString(lang) + ' ' + date.toLocaleTimeString(lang, {hour: '2-digit', minute:'2-digit'});
     },
     
     getIconClass(type) {
@@ -314,6 +338,7 @@ window.checkoutFlow = (initialType, initialTableToken = '', messages = {}) => ({
     frame: null,
     canvas: null,
     canvasContext: null,
+    tableValidated: Boolean(initialTableToken),
 
     setType(type) {
         this.type = type;
@@ -427,6 +452,7 @@ window.checkoutFlow = (initialType, initialTableToken = '', messages = {}) => ({
         const token = this.extractTableToken(rawValue);
 
         if (!token) {
+            this.tableValidated = false;
             this.scanError = this.messages.notTable;
             this.frame = requestAnimationFrame(() => this.scanFrame());
             return;
@@ -436,6 +462,7 @@ window.checkoutFlow = (initialType, initialTableToken = '', messages = {}) => ({
 
         if (!validation.ok) {
             this.tableToken = '';
+            this.tableValidated = false;
             this.scanError = validation.message || 'This table QR is not registered for this restaurant.';
             this.scanStatus = '';
             this.stopScanner();
@@ -443,6 +470,7 @@ window.checkoutFlow = (initialType, initialTableToken = '', messages = {}) => ({
         }
 
         this.tableToken = token;
+        this.tableValidated = true;
         this.scanStatus = validation.table
             ? this.messages.tableScanned.replace(':table', validation.table)
             : this.messages.scanned;
@@ -463,14 +491,41 @@ window.checkoutFlow = (initialType, initialTableToken = '', messages = {}) => ({
                 headers: { Accept: 'application/json' },
             });
 
-            if (!response.ok) {
-                return { ok: false, message: this.messages.notRegistered };
+            const data = await response.json().catch(() => ({}));
+
+            if (!response.ok || data.ok === false) {
+                return { ok: false, message: data.message || this.messages.notRegistered };
             }
 
-            return await response.json();
+            return data;
         } catch (error) {
             return { ok: false, message: this.messages.validationFailed };
         }
+    },
+
+    async validateManualTableToken() {
+        this.tableValidated = false;
+        this.scanStatus = '';
+        this.scanError = '';
+
+        const token = String(this.tableToken || '').trim();
+
+        if (!token) {
+            return;
+        }
+
+        const validation = await this.validateTableToken(token);
+
+        if (!validation.ok) {
+            this.scanError = validation.message || this.messages.notRegistered;
+            return;
+        }
+
+        this.tableToken = token;
+        this.tableValidated = true;
+        this.scanStatus = validation.table
+            ? this.messages.tableScanned.replace(':table', validation.table)
+            : this.messages.scanned;
     },
 
     extractTableToken(rawValue) {
@@ -509,8 +564,149 @@ window.checkoutFlow = (initialType, initialTableToken = '', messages = {}) => ({
     },
 });
 
+window.deliveryChat = (config = {}) => ({
+    currentUserId: Number(config.currentUserId || 0),
+    orderId: config.orderId,
+    channelName: config.channelName,
+    sendUrl: config.sendUrl,
+    canSend: Boolean(config.canSend),
+    currentUserLabel: config.currentUserLabel || 'You',
+    closedMessage: config.closedMessage || 'Chat is closed because this order has already been delivered.',
+    sendErrorMessage: config.sendErrorMessage || 'The message could not be sent.',
+    messages: Array.isArray(config.messages) ? config.messages : [],
+    draft: '',
+    sending: false,
+    error: '',
+
+    init() {
+        this.messages = this.messages.map((message) => this.normalizeMessage(message));
+        this.$nextTick(() => this.scrollToLatest());
+        this.listenForMessages();
+    },
+
+    listenForMessages() {
+        if (!window.Echo || !this.channelName) {
+            return;
+        }
+
+        window.Echo
+            .private(this.channelName)
+            .listen('.delivery.message.sent', (event) => {
+                const incoming = this.normalizeMessage(event);
+                const incomingId = Number(incoming.message_id || incoming.id || 0);
+
+                if (incomingId && this.messages.some((message) => Number(message.message_id || message.id || 0) === incomingId)) {
+                    return;
+                }
+
+                this.messages.push(incoming);
+                this.$nextTick(() => this.scrollToLatest());
+            });
+    },
+
+    destroy() {
+        if (window.Echo && this.channelName) {
+            window.Echo.leave(this.channelName);
+        }
+    },
+
+    async send() {
+        const message = this.draft.trim();
+
+        if (!message || this.sending) {
+            return;
+        }
+
+        if (!this.canSend) {
+            this.error = this.closedMessage;
+            return;
+        }
+
+        const tempId = `temp-${Date.now()}`;
+        const optimisticMessage = this.normalizeMessage({
+            id: tempId,
+            sender_id: this.currentUserId,
+            message,
+            sender_name: this.currentUserLabel,
+            sender_role: 'current',
+            created_at: new Date().toISOString(),
+            pending: true,
+        });
+
+        this.error = '';
+        this.sending = true;
+        this.draft = '';
+        this.messages.push(optimisticMessage);
+        this.$nextTick(() => this.scrollToLatest());
+
+        try {
+            const response = await fetch(this.sendUrl, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                },
+                body: JSON.stringify({ message }),
+            });
+            const data = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                throw new Error(data.message || this.sendErrorMessage);
+            }
+
+            const confirmedMessage = this.normalizeMessage(data.message || data);
+            this.messages = this.messages.map((item) => item.id === tempId ? confirmedMessage : item);
+        } catch (error) {
+            this.messages = this.messages.filter((item) => item.id !== tempId);
+            this.draft = message;
+            this.error = error.message || this.sendErrorMessage;
+        } finally {
+            this.sending = false;
+            this.$nextTick(() => this.scrollToLatest());
+        }
+    },
+
+    isCurrentUser(message) {
+        return Boolean(message.is_from_current_user) || Number(message.sender_id) === this.currentUserId;
+    },
+
+    normalizeMessage(payload = {}) {
+        const createdAt = payload.created_at ? new Date(payload.created_at) : new Date();
+        const messageId = payload.message_id || payload.id || null;
+
+        return {
+            id: payload.id || messageId || `message-${createdAt.getTime()}`,
+            message_id: messageId,
+            order_id: payload.order_id || this.orderId,
+            delivery_id: payload.delivery_id || null,
+            sender_id: Number(payload.sender_id || 0),
+            receiver_id: Number(payload.receiver_id || 0),
+            message: payload.message || '',
+            sender_name: payload.sender_name || '',
+            sender_role: payload.sender_role || '',
+            created_at: payload.created_at || createdAt.toISOString(),
+            formatted_time: formatLocalChatTime(createdAt),
+            is_from_current_user: Boolean(payload.is_from_current_user),
+            is_read: Boolean(payload.is_read),
+            pending: Boolean(payload.pending),
+        };
+    },
+
+    scrollToLatest() {
+        const messages = this.$refs.messages;
+
+        if (!messages) {
+            return;
+        }
+
+        messages.scrollTop = messages.scrollHeight;
+    },
+});
+
 window.Alpine = Alpine;
 
 setupTenantRealtime();
+localizeChatTimes();
 
 Alpine.start();

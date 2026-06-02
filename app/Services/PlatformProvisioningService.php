@@ -97,8 +97,8 @@ class PlatformProvisioningService
             PlatformNotification::query()->firstOrCreate(
                 ['tenant_id' => $tenant->id, 'type' => 'tenant_approved'],
                 [
-                    'title' => 'Restaurant approved',
-                    'body' => $application->restaurant_name.' is ready at /'.$tenant->id,
+                    'title' => __('Restaurant approved'),
+                    'body' => __(':restaurant is ready at /:tenant', ['restaurant' => $application->restaurant_name, 'tenant' => $tenant->id]),
                 ],
             );
         });
@@ -121,7 +121,7 @@ class PlatformProvisioningService
 
         if ($existingTenant || $existingAdmin) {
             throw ValidationException::withMessages([
-                'owner_email' => 'This admin already owns a restaurant workspace.',
+                'owner_email' => __('This admin already owns a restaurant workspace.'),
             ]);
         }
     }
@@ -136,8 +136,8 @@ class PlatformProvisioningService
 
         PlatformNotification::query()->create([
             'type' => 'application_rejected',
-            'title' => 'Restaurant application rejected',
-            'body' => $application->restaurant_name.' was rejected. '.Str::limit((string) $note, 120),
+            'title' => __('Restaurant application rejected'),
+            'body' => __(':restaurant was rejected. :note', ['restaurant' => $application->restaurant_name, 'note' => Str::limit((string) $note, 120)]),
         ]);
     }
 }

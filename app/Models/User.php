@@ -50,6 +50,16 @@ class User extends Authenticatable
         return $this->hasMany(Order::class, 'driver_id');
     }
 
+    public function sentDeliveryMessages(): HasMany
+    {
+        return $this->hasMany(DeliveryMessage::class, 'sender_id');
+    }
+
+    public function receivedDeliveryMessages(): HasMany
+    {
+        return $this->hasMany(DeliveryMessage::class, 'receiver_id');
+    }
+
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);

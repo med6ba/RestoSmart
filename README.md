@@ -50,4 +50,41 @@ SaaS login (`/login`) is for Super and Admin accounts. Tenant login (`/{tenant-s
 - Kitchen receives orders, starts preparation, and marks orders ready.
 - Driver sees assigned and ready delivery orders, picks up, follows a simulated route, and validates delivery.
 
+## Smart Delivery Chat
+
+Smart Delivery Chat lets a client and the delivery driver assigned to that client's order coordinate in real time with Laravel Reverb, Broadcasting, Echo, and Alpine.js.
+
+- Visible only to tenant `client` and `driver` users as **Delivery Chat** in the desktop sidebar and mobile bottom nav.
+- Client routes: `/{tenant}/client/delivery-chat`, `/{tenant}/client/delivery-chat/{order}`, `/{tenant}/client/delivery-chat/{order}/send`.
+- Driver routes: `/{tenant}/driver/delivery-chat`, `/{tenant}/driver/delivery-chat/{order}`, `/{tenant}/driver/delivery-chat/{order}/send`.
+- Clients can access only their own delivery orders after a driver is assigned.
+- Drivers can access only delivery orders assigned to them.
+- Admin, super admin, and kitchen users cannot access chat routes or subscribe to chat channels.
+- Chat is available while the order is assigned or out for delivery. Once delivered, the thread stays visible but the composer is locked with: `Chat is closed because this order has already been delivered.`
+- Messages are tenant-owned rows in `delivery_messages` and are not deleted when delivery completes.
+
+Local Reverb workflow:
+
+```bash
+php artisan serve --host=0.0.0.0 --port=9999
+php artisan reverb:start
+npm run dev
+```
+
+The default `.env.example` includes local Reverb values:
+
+```dotenv
+BROADCAST_CONNECTION=reverb
+REVERB_APP_ID=local-app-id
+REVERB_APP_KEY=local-app-key
+REVERB_APP_SECRET=local-app-secret
+REVERB_HOST=localhost
+REVERB_PORT=8080
+REVERB_SCHEME=http
+VITE_REVERB_APP_KEY="${REVERB_APP_KEY}"
+VITE_REVERB_HOST="${REVERB_HOST}"
+VITE_REVERB_PORT="${REVERB_PORT}"
+VITE_REVERB_SCHEME="${REVERB_SCHEME}"
+```
+
 See [docs/TECHNICAL.md](docs/TECHNICAL.md) for data dictionary, architecture notes, and evaluation coverage.

@@ -9,6 +9,7 @@
         request()->routeIs('tenant.checkout') => __('Checkout'),
         request()->routeIs('tenant.orders.index') => __('My orders'),
         request()->routeIs('tenant.orders.show') => __('Order details'),
+        request()->routeIs('tenant.client.delivery-chat.*', 'tenant.driver.delivery-chat.*') => __('Delivery Chat'),
         request()->routeIs('tenant.kitchen') => __('Kitchen display system'),
         request()->routeIs('tenant.driver') => __('Driver mobile dashboard'),
         request()->routeIs('tenant.settings', 'settings') => __('Settings'),
@@ -85,7 +86,7 @@
                                                 <x-icon name="users" class="h-4 w-4" />
                                             </span>
                                             <p class="min-w-0 font-semibold">
-                                                {{ __('Mode impersonation') }}:
+                                                {{ __('Impersonation mode') }}:
                                                 <span class="font-bold">{{ $user->name }}</span>
                                             </p>
                                         </div>
@@ -93,7 +94,7 @@
                                             @csrf
                                             <button class="inline-flex items-center justify-center gap-2 rounded-lg border border-amber-300 bg-white px-3 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-100 app-focus dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100 dark:hover:bg-amber-900/50">
                                                 <x-icon name="log-out" class="h-4 w-4" />
-                                                {{ __('Retour super admin') }}
+                                                {{ __('Return to super admin') }}
                                             </button>
                                         </form>
                                     </div>

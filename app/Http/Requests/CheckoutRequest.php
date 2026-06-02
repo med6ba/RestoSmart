@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Models\RestaurantTable;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class CheckoutRequest extends FormRequest
 {
@@ -30,5 +32,30 @@ class CheckoutRequest extends FormRequest
             ],
             'kitchen_notes' => ['nullable', 'string', 'max:700'],
         ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'restaurant_table_token.exists' => __('This table QR is not registered for this restaurant.'),
+        ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            if ($this->input('type') !== 'local' || $validator->errors()->has('restaurant_table_token')) {
+                return;
+            }
+
+            $table = RestaurantTable::query()
+                ->where('qr_token', $this->input('restaurant_table_token'))
+                ->where('is_active', true)
+                ->first();
+
+            if ($table?->is_occupied) {
+                $validator->errors()->add('restaurant_table_token', __('This table is already occupied. Please choose another table.'));
+            }
+        });
     }
 }

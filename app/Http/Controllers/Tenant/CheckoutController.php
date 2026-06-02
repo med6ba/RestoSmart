@@ -25,7 +25,7 @@ class CheckoutController extends Controller
         return view('tenant.checkout', [
             'cartLines' => $cart->lines(),
             'subtotalCents' => $cart->subtotalCents(),
-            'hasActiveTables' => RestaurantTable::query()->where('is_active', true)->exists(),
+            'hasActiveTables' => RestaurantTable::query()->available()->exists(),
             'initialTableToken' => $tableToken,
             'selectedType' => old('type', $tableToken !== '' ? 'local' : 'delivery'),
         ]);
@@ -49,7 +49,6 @@ class CheckoutController extends Controller
 
         $table = RestaurantTable::query()
             ->where('qr_token', $data['token'])
-            ->where('is_active', true)
             ->first();
 
         if (! $table) {
@@ -57,6 +56,20 @@ class CheckoutController extends Controller
                 'ok' => false,
                 'message' => __('This table QR is not registered for this restaurant.'),
             ], 404);
+        }
+
+        if (! $table->is_active) {
+            return response()->json([
+                'ok' => false,
+                'message' => __('This table QR is not registered for this restaurant.'),
+            ], 404);
+        }
+
+        if ($table->is_occupied) {
+            return response()->json([
+                'ok' => false,
+                'message' => __('This table is already occupied. Please choose another table.'),
+            ], 409);
         }
 
         return response()->json([
@@ -77,7 +90,7 @@ class CheckoutController extends Controller
             return '';
         }
 
-        if (RestaurantTable::query()->where('qr_token', $tableToken)->where('is_active', true)->exists()) {
+        if (RestaurantTable::query()->where('qr_token', $tableToken)->available()->exists()) {
             $request->session()->put($this->tableSessionKey(), $tableToken);
 
             return $tableToken;

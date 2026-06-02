@@ -16,9 +16,9 @@ class PlatformUserController extends Controller
      * @var array<string, array{label: string, icon: string}>
      */
     private const ROLES = [
-        'admin' => ['label' => 'Administrateurs', 'icon' => 'shield-check'],
-        'kitchen' => ['label' => 'Cuisine', 'icon' => 'chef-hat'],
-        'driver' => ['label' => 'Livreurs', 'icon' => 'truck'],
+        'admin' => ['label' => 'Admins', 'icon' => 'shield-check'],
+        'kitchen' => ['label' => 'Kitchen', 'icon' => 'chef-hat'],
+        'driver' => ['label' => 'Drivers', 'icon' => 'truck'],
         'client' => ['label' => 'Clients', 'icon' => 'user'],
     ];
 
