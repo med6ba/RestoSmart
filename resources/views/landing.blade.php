@@ -46,10 +46,35 @@
         'business' => __('For operators running multiple branches, bigger teams, and subscription-ready growth.'),
     ];
 
+    $footerColumns = [
+        [
+            'title' => __('Explore'),
+            'links' => [
+                ['label' => __('Features'), 'url' => '#features'],
+                ['label' => __('Workflow'), 'url' => '#workflow'],
+                ['label' => __('Pricing'), 'url' => '#pricing'],
+            ],
+        ],
+        [
+            'title' => __('Access'),
+            'links' => [
+                ['label' => __('Start onboarding'), 'url' => route('restaurants.apply')],
+                ['label' => __('Platform login'), 'url' => route('login')],
+            ],
+        ],
+    ];
+
+    $footerHighlights = [
+        ['icon' => 'shield-check', 'label' => __('Role-based dashboards')],
+        ['icon' => 'qr-code', 'label' => __('Table QR ordering')],
+        ['icon' => 'messages-square', 'label' => __('Real-time delivery chat')],
+        ['icon' => 'languages', 'label' => __('Multilingual interface')],
+    ];
+
 @endphp
 
 <x-app-layout>
-    <section class="relative isolate overflow-hidden border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
+    <section id="top" class="relative isolate overflow-hidden border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
         <img src="{{ asset('images/restaurant-dining-hero.png') }}" alt="" class="absolute inset-0 h-full w-full object-cover object-center opacity-90 dark:hidden">
         <img src="{{ asset('images/restaurant-dining-night-hero.png') }}" alt="" class="absolute inset-0 hidden h-full w-full object-cover object-center opacity-75 dark:block">
         <div class="absolute inset-0 bg-gradient-to-r from-white via-white/90 to-white/35 dark:from-zinc-950 dark:via-zinc-950/88 dark:to-zinc-950/42"></div>
@@ -90,7 +115,7 @@
         </div>
     </section>
 
-    <section class="bg-zinc-50 py-16 dark:bg-zinc-950">
+    <section id="features" class="scroll-mt-20 bg-zinc-50 py-16 dark:bg-zinc-950">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="max-w-2xl">
                 <p class="text-sm font-semibold uppercase text-brand-700 dark:text-brand-300">{{ __('Built for restaurant service') }}</p>
@@ -113,7 +138,7 @@
         </div>
     </section>
 
-    <section class="border-y border-zinc-200 bg-white py-16 dark:border-zinc-800 dark:bg-zinc-900/60">
+    <section id="workflow" class="scroll-mt-20 border-y border-zinc-200 bg-white py-16 dark:border-zinc-800 dark:bg-zinc-900/60">
         <div class="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-[0.85fr_1.15fr] lg:px-8">
             <div>
                 <p class="text-sm font-semibold uppercase text-brand-700 dark:text-brand-300">{{ __('How service stays organized') }}</p>
@@ -138,7 +163,7 @@
         </div>
     </section>
 
-    <section class="bg-zinc-50 py-16 dark:bg-zinc-950">
+    <section id="pricing" class="scroll-mt-20 bg-zinc-50 py-16 dark:bg-zinc-950">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
                 <div class="max-w-2xl">
@@ -209,4 +234,58 @@
             </div>
         </div>
     </section>
+
+    <footer class="border-t border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950" aria-label="{{ __('Footer') }}">
+        <div class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+            <div class="grid gap-10 lg:grid-cols-[1.1fr_0.9fr]">
+                <div class="min-w-0">
+                    <a href="{{ route('home') }}" class="inline-flex max-w-full items-center gap-3 rounded-lg app-focus">
+                        <x-application-logo class="h-11 w-11 shrink-0" alt="{{ __('RestoSmart') }}" />
+                        <span class="min-w-0 truncate text-lg font-bold text-zinc-950 dark:text-white">{{ __('RestoSmart') }}</span>
+                    </a>
+
+                    <p class="mt-5 max-w-2xl text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+                        {{ __('RestoSmart brings tenant onboarding, menu ordering, kitchen preparation, delivery dispatch, table QR flows, and multilingual access into one restaurant SaaS workspace.') }}
+                    </p>
+
+                    <div class="mt-6 grid gap-3 sm:grid-cols-2">
+                        @foreach ($footerHighlights as $highlight)
+                            <div class="flex min-w-0 items-center gap-3 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-3 text-sm font-semibold text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900/70 dark:text-zinc-200">
+                                <span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white text-brand-700 dark:bg-zinc-950 dark:text-brand-300">
+                                    <x-icon :name="$highlight['icon']" class="h-4 w-4" />
+                                </span>
+                                <span class="min-w-0 break-words">{{ $highlight['label'] }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                <div class="grid gap-8 sm:grid-cols-2">
+                    @foreach ($footerColumns as $column)
+                        <nav aria-label="{{ $column['title'] }}">
+                            <h2 class="text-sm font-bold uppercase tracking-wide text-zinc-950 dark:text-white">{{ $column['title'] }}</h2>
+                            <ul class="mt-4 space-y-3">
+                                @foreach ($column['links'] as $link)
+                                    <li>
+                                        <a href="{{ $link['url'] }}" class="inline-flex max-w-full items-center gap-2 rounded-md text-sm font-medium text-zinc-600 transition hover:text-brand-700 app-focus dark:text-zinc-300 dark:hover:text-brand-200">
+                                            <span class="min-w-0 break-words">{{ $link['label'] }}</span>
+                                            <x-icon name="arrow-right" class="h-3.5 w-3.5 shrink-0 rtl:rotate-180" />
+                                        </a>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        </nav>
+                    @endforeach
+                </div>
+            </div>
+
+            <div class="mt-10 flex flex-col gap-4 border-t border-zinc-200 pt-6 text-sm text-zinc-500 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-800 dark:text-zinc-400">
+                <p class="break-words">&copy; {{ now()->year }} {{ __('RestoSmart') }}. {{ __('All rights reserved.') }}</p>
+                <a href="#top" class="inline-flex w-fit items-center gap-2 rounded-md font-semibold text-zinc-700 transition hover:text-brand-700 app-focus dark:text-zinc-200 dark:hover:text-brand-200">
+                    {{ __('Back to top') }}
+                    <x-icon name="arrow-right" class="h-3.5 w-3.5 -rotate-90" />
+                </a>
+            </div>
+        </div>
+    </footer>
 </x-app-layout>

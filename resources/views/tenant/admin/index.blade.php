@@ -49,7 +49,7 @@
 
             <div class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 @forelse ($tables as $table)
-                    @php($tableLink = route('tenant.menu', tenant('id')).'?'.http_build_query(['table' => $table->qr_token]))
+                    @php($qrDownloadUrl = route('tenant.admin.tables.qr', [tenant('id'), $table, 'download' => 1]))
                     <article class="relative overflow-hidden rounded-lg border border-zinc-200 bg-zinc-50 p-4 transition hover:border-brand-300 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-brand-800">
                         <div class="absolute inset-x-0 top-0 h-1 bg-brand-500"></div>
                         <div class="flex items-start justify-between gap-3">
@@ -68,15 +68,11 @@
                             <img src="{{ route('tenant.admin.tables.qr', [tenant('id'), $table]) }}" alt="{{ __(':table QR code', ['table' => $table->code]) }}" class="h-32 w-32">
                         </div>
 
-                        <p class="mt-3 break-all rounded-md bg-white px-2 py-1.5 font-mono text-[11px] text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">{{ $tableLink }}</p>
+                        <p class="mt-3 break-all rounded-md bg-white px-2 py-1.5 font-mono text-[11px] text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">{{ $table->qr_token }}</p>
                         <div class="mt-3 grid gap-2">
-                            <a href="{{ route('tenant.admin.tables.qr', [tenant('id'), $table]) }}" target="_blank" class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-100 app-focus dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800">
+                            <a href="{{ $qrDownloadUrl }}" download="table-{{ \Illuminate\Support\Str::slug($table->code) ?: $table->id }}-qr.png" class="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-100 app-focus dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800">
                                 <x-icon name="qr-code" class="h-4 w-4" />
-                                {{ __('Open QR') }}
-                            </a>
-                            <a href="{{ $tableLink }}" target="_blank" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-700 px-3 py-2 text-xs font-semibold text-white hover:bg-brand-800 app-focus">
-                                <x-icon name="external-link" class="h-4 w-4" />
-                                {{ __('Open table link') }}
+                                {{ __('Download QR') }}
                             </a>
                         </div>
                     </article>

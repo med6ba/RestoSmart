@@ -13,6 +13,7 @@ use App\Models\Order;
 use App\Models\RestaurantTable;
 use App\Models\User;
 use App\Services\OrderWorkflowService;
+use App\Support\QrCodePng;
 use App\Support\QrCodeSvg;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -73,6 +74,16 @@ class AdminController extends Controller
 
     public function tableQr(Request $request, RestaurantTable $restaurantTable): Response
     {
+        if ($request->boolean('download')) {
+            $filename = sprintf('table-%s-qr.png', Str::slug($restaurantTable->code) ?: $restaurantTable->id);
+
+            return response(QrCodePng::make($this->tableQrPayload($request, $restaurantTable)), 200, [
+                'Content-Type' => 'image/png',
+                'Cache-Control' => 'private, no-store',
+                'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+            ]);
+        }
+
         return response(QrCodeSvg::make($this->tableQrPayload($request, $restaurantTable)), 200, [
             'Content-Type' => 'image/svg+xml',
             'Cache-Control' => 'private, no-store',
