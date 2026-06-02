@@ -29,7 +29,7 @@
         <button
             type="button"
             @click="setTheme(theme === 'dark' ? 'light' : 'dark')"
-            class="grid h-10 w-10 place-items-center rounded-lg border border-zinc-300 text-zinc-700 transition hover:bg-zinc-100 app-focus dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            class="grid h-10 w-10 place-items-center rounded-lg border border-zinc-200 bg-white/90 text-zinc-800 shadow-sm backdrop-blur-sm transition hover:bg-white hover:shadow-md app-focus dark:border-zinc-700 dark:bg-transparent dark:text-zinc-200 dark:shadow-none dark:backdrop-blur-none dark:hover:bg-zinc-800"
             aria-label="{{ __('Toggle theme') }}"
             title="{{ __('Toggle theme') }}"
         >
